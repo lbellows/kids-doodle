@@ -1,19 +1,18 @@
 {
   "expo": {
-    "name": "kids-doodle-init",
-    "slug": "kids-doodle-init",
+    "name": "KidsDoodle",
+    "slug": "kids-doodle",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "ios": {
-      "supportsTablet": true
-    },
+    "scheme": "kidsdoodle",
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -21,10 +20,18 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "package": "com.kidsdoodle.app",
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-navigation-bar"
+    ],
+    "experiments": {
+      "typedRoutes": true
     }
   }
 }

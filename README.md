@@ -1,0 +1,131 @@
+# KidsDoodle
+
+![KidsDoodle](readme/doodle.png)
+
+A drawing app for kids with a parent-lock feature. Kids can draw freely; parents can lock the screen behind a PIN so the child can't navigate away.
+
+## Tech Stack
+
+| | |
+|---|---|
+| Runtime | Expo SDK 55 / React Native 0.83 |
+| Language | TypeScript (strict) |
+| Navigation | expo-router (file-based) |
+| Drawing — Android | @shopify/react-native-skia 2.4.18 |
+| Drawing — Web | HTML5 `<canvas>` (platform file: `DrawingCanvas.web.tsx`) |
+| Touch input | react-native-gesture-handler v2 (Gesture API) |
+| PIN storage | AsyncStorage + expo-crypto SHA-256 |
+| Android nav bar | expo-navigation-bar (hidden in lock mode) |
+
+## Project Structure
+
+```
+app/
+  _layout.tsx      Root layout — GestureHandlerRootView, no headers
+  index.tsx        Draw screen (home); redirects to /pin-setup on first launch
+  pin-setup.tsx    4-digit PIN creation (enter → confirm)
+  settings.tsx     Change PIN (requires current PIN)
+
+components/
+  DrawingCanvas.tsx      Native: Skia canvas + RNGH PanGesture
+  DrawingCanvas.web.tsx  Web: HTML5 <canvas> (Skia is never imported on web)
+  ColorPicker.tsx        8-swatch color picker
+  Toolbar.tsx            Colors + S/M/L brush + eraser + clear
+  PinPad.tsx             4-digit numeric pad with shake animation
+
+hooks/
+  usePin.ts          Save / verify / clear hashed PIN
+  useLockState.ts    locked boolean + lock / unlock
+
+utils/
+  hash.ts            expo-crypto SHA-256 wrapper
+
+public/
+  canvaskit.wasm     CanvasKit WASM (copied by setup-canvaskit.js; Metro web only)
+```
+
+## Setup
+
+### Prerequisites
+
+- Node.js 18+
+- Expo Go on Android ([Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent))
+- For EAS builds: an [Expo account](https://expo.dev) + `npm install -g eas-cli`
+
+### Install
+
+```bash
+git clone <repo>
+cd kids-doodle
+npm install
+```
+
+### Run on device (Expo Go)
+
+```bash
+npx expo start
+```
+
+Scan the QR code with Expo Go on Android.
+
+> **Note:** `expo-navigation-bar` (hiding the system nav bar while locked) only works in a native/EAS build. All other features work in Expo Go.
+
+### Run on Android emulator
+
+```bash
+npx expo start --android
+```
+
+### Run in browser
+
+```bash
+npx expo start --web
+```
+
+The web version uses an HTML5 canvas instead of Skia. Full feature parity except the nav-bar hiding (web has no system nav bar).
+
+## EAS Build (Android)
+
+```bash
+eas login
+eas build --platform android --profile preview   # APK  (internal testing)
+eas build --platform android --profile production # AAB  (Play Store)
+```
+
+The `development` profile builds a debug APK with Expo Dev Client for native-module testing.
+
+## Features
+
+| Feature | Android | Web |
+|---|---|---|
+| Freehand drawing | Skia canvas | HTML5 canvas |
+| 8 preset colors | ✓ | ✓ |
+| Brush sizes (S / M / L) | ✓ | ✓ |
+| Eraser | ✓ | ✓ |
+| Clear canvas | ✓ | ✓ |
+| Lock screen (PIN overlay) | ✓ | ✓ |
+| Wrong-PIN shake + vibrate | ✓ | shake only |
+| Hide system nav bar | ✓ | n/a |
+| Block hardware back button | ✓ | n/a |
+| First-launch PIN setup | ✓ | ✓ |
+| Change PIN (settings) | ✓ | ✓ |
+
+## First Launch Flow
+
+1. App opens → no PIN found in AsyncStorage → redirect to **PIN Setup**
+2. Enter a 4-digit PIN, then confirm it
+3. PIN is SHA-256 hashed and saved to AsyncStorage
+4. Returned to the draw screen
+
+## Lock Flow
+
+1. Tap 🔒 (top-right) → semi-transparent overlay covers the canvas
+2. Android: system nav bar hides, hardware back button is blocked
+3. Enter the correct 4-digit PIN → overlay dismisses
+4. Wrong PIN → shake animation + vibration, try again
+
+## Known Issues / Notes
+
+- **Expo Go + nav bar**: `expo-navigation-bar` is a native module; the lock-screen nav-bar-hiding feature requires a native build via EAS (`preview` or `development` profile).
+- **Web + Skia**: Skia's web bundle evaluates `JsiSkApi(global.CanvasKit)` synchronously at module load, before CanvasKit WASM can be async-loaded. The solution is the `.web.tsx` platform file — Metro bundles `DrawingCanvas.web.tsx` for web and `DrawingCanvas.tsx` for native, so Skia is never imported on web.
+- **Metro platform resolution**: `metro.config.js` explicitly adds `'web'` to `resolver.platforms`; without this, Metro ignores `.web.tsx` files even when bundling for web.

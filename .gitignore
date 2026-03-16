@@ -30,7 +30,11 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# generated web assets
+public/canvaskit.wasm
+
 # local env files
+.env
 .env*.local
 
 # typescript
