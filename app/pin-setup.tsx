@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Vibration,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { usePin } from '../hooks/usePin';
@@ -22,7 +21,6 @@ export default function PinSetupScreen() {
   const router = useRouter();
 
   const shake = () => {
-    Vibration.vibrate(200);
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 12, duration: 60, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: -12, duration: 60, useNativeDriver: true }),

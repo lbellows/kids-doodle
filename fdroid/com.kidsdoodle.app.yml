@@ -149,18 +149,20 @@ MaintainerNotes: |-
   with them present. Every architecture's native code in the APK is compiled from
   source during the Gradle build.
 
-  The released APK declares one permission that a user ever sees: VIBRATE, for
-  the wrong-PIN buzz. It also carries
-  com.kidsdoodle.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION, which AndroidX
-  core generates, namespaced to the app's own package with
+  The released APK requests no Android permission at all. The only
+  uses-permission entry is com.kidsdoodle.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION,
+  which AndroidX core generates, namespaced to the app's own package with
   protectionLevel="signature"; it is app-private, grants nothing to any other
-  app, and is required by ContextCompat.registerReceiver. It has no network
-  permissions at all: INTERNET is declared only in debug builds so the device
-  can reach the Metro dev server, and ACCESS_NETWORK_STATE is contributed by
-  React Native core's library manifest for a networking stack this app never
-  uses. A release-only manifest overlay (plugins/withOfflineReleaseManifest.js)
-  removes both, and CI fails the build if the released APK's permission set is
-  anything other than exactly those two.
+  app, is not surfaced to users, and is required by
+  ContextCompat.registerReceiver. VIBRATE backed a buzz on a wrong PIN and was
+  dropped in 1.0.1; the shake animation that always accompanied it remains.
+  There are no network permissions: INTERNET is declared only in debug builds so
+  the device can reach the Metro dev server, and ACCESS_NETWORK_STATE is
+  contributed by React Native core's library manifest for a networking stack
+  this app never uses. A release-only manifest overlay
+  (plugins/withOfflineReleaseManifest.js) removes both, and CI fails the build
+  if the released APK's permission set is anything other than that single
+  app-private entry.
 
   There is no analytics, advertising or crash reporting, and no Google Play
   Services or other proprietary dependency. Every runtime dependency is MIT,
