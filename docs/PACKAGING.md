@@ -18,6 +18,7 @@ IzzyOnDroid is the fast path and a normal stepping stone to the main repo. Do bo
 |---|---|
 | `v1.0.0` | tagged and released — **93.8 MB, too big for IzzyOnDroid** |
 | `v1.0.2` | split per ABI, minified, libraries compressed, no permissions — 17–18 MB |
+| `v1.0.3` | recipe fixes so F-Droid can build it at all; not yet tagged |
 | IzzyOnDroid inclusion request | **not yet opened** — Codeberg |
 | fdroiddata merge request | **not yet opened** — GitLab |
 
@@ -393,23 +394,56 @@ accepted, every tagged release is picked up automatically. Paste-ready body:
 
 1. Tag `v1.0.0` and push it — the recipe's `commit:` field points at that tag,
    and F-Droid builds tags, never branches.
-2. Verify the recipe locally before submitting. This is worth the setup time;
-   a recipe that fails in their buildserver means another review round trip:
+2. Verify the recipe locally before submitting. Do not skip this: the first
+   time it was run, it found that the recipe's `init` commands never executed
+   and that the scanner reported 46 problems per build entry. Neither is
+   visible from GitHub Actions, which runs Gradle directly and never reads the
+   recipe at all.
+
+   `fdroid` is not packaged for Arch/Artix. Install it from PyPI:
+
    ```sh
-   git clone https://gitlab.com/fdroid/fdroidserver
-   git clone https://gitlab.com/fdroid/fdroiddata
-   cp fdroid/com.kidsdoodle.app.yml fdroiddata/metadata/
-   cd fdroiddata
-   ../fdroidserver/fdroid build -v -l com.kidsdoodle.app
+   pipx install fdroidserver
    ```
-3. Fork <https://gitlab.com/fdroid/fdroiddata>, add
+
+   `fdroid lint` and `fdroid scanner` need no Android toolchain — scanner
+   clones the tagged source, runs the recipe's `init`, and inspects the result.
+   Both need a working directory laid out like fdroiddata:
+
+   ```sh
+   mkdir -p /tmp/fdcheck/metadata && cd /tmp/fdcheck
+   cp ~/src/kids-doodle/fdroid/com.kidsdoodle.app.yml metadata/
+   curl -fsSLO https://gitlab.com/fdroid/fdroiddata/-/raw/master/config/categories.yml
+   {
+     printf 'repo_url: "https://example.com/fdroid/repo"\nrepo_name: "t"\n'
+     printf 'repo_description: "t"\nsdk_path: "/opt/android-sdk"\ncategories:\n'
+     grep -E '^[A-Za-z][^:]*:$' categories.yml | sed 's/:$//; s/^/  - "/; s/$/"/'
+   } > config.yml
+
+   fdroid lint com.kidsdoodle.app     # metadata fields; silence means clean
+   fdroid scanner com.kidsdoodle.app  # binaries and maven repos in the source
+   ```
+
+   The `categories:` list matters — without it every category is "not valid",
+   which looks like a real finding and is not.
+
+   `fdroid scanner` reads `commit:` from the recipe, so it verifies the
+   **tagged** source, not your working tree. Point `commit:` at a branch SHA to
+   test changes before tagging.
+
+3. A full `fdroid build -v -l com.kidsdoodle.app` additionally needs JDK 17,
+   the Android SDK and NDK r27b on this machine — none of which are installed
+   here. Lint and scanner cover the recipe itself; GitHub Actions already
+   compiles the identical Gradle build on every push, so the remaining gap is
+   small. F-Droid's own CI builds the merge request too.
+4. Fork <https://gitlab.com/fdroid/fdroiddata>, add
    `metadata/com.kidsdoodle.app.yml`, and open a merge request. Title it
    `New app: KidsDoodle (com.kidsdoodle.app)`; the description only needs to
    say it is a new app, that the build was verified locally with
    `fdroid build -v -l`, and to point at the `MaintainerNotes` in the recipe,
    which already answer the Skia, prebuilt-binary and permission questions a
    reviewer will raise.
-4. Keep `fdroid/com.kidsdoodle.app.yml` in this repo in sync with what you
+5. Keep `fdroid/com.kidsdoodle.app.yml` in this repo in sync with what you
    submit, so the recipe is reviewable next to the code it builds.
 
 `AutoUpdateMode: Version v%v` and `UpdateCheckMode: Tags` mean F-Droid picks up

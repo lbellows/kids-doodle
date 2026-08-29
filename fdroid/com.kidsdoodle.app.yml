@@ -6,6 +6,7 @@
 # See docs/PACKAGING.md for the submission procedure.
 
 Categories:
+  - Draw
   - Graphics
 License: MIT
 AuthorName: LB
@@ -24,9 +25,9 @@ Builds:
   # here produces exactly one APK. Each APK's versionCode is
   # `expo.android.versionCode * 10 + <abi offset>` (armeabi-v7a 1, arm64-v8a 2,
   # x86_64 3), assigned in plugins/withAbiSplits.js.
-  - versionName: 1.0.2
-    versionCode: 31
-    commit: v1.0.2
+  - versionName: 1.0.3
+    versionCode: 41
+    commit: v1.0.3
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=armeabi-v7a
@@ -38,6 +39,11 @@ Builds:
       - mv /opt/node-v22.23.2-linux-x64 /opt/node
       - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
     init:
+      # fdroidserver joins these with "; " into a single bash invocation whose
+      # working directory is `subdir` above, not the repository root. So cd up
+      # once, here, and the rest run from the root. Keep the number of levels in
+      # step with `subdir`.
+      - cd ../..
       - npm ci
       # Deletes every prebuilt binary in node_modules that this build does not
       # use, so the Gradle build has to succeed without them. See the notes below.
@@ -46,11 +52,34 @@ Builds:
       - yes
     rm:
       - .github
+    scanignore:
+      # Everything the scanner would otherwise flag is deleted by
+      # scripts/purge-nonfree-blobs.sh in the init step above. These are the
+      # exceptions, and each is here for a stated reason rather than to quiet
+      # the scanner:
+      #
+      # The Linux Hermes compiler. The Gradle build runs it to compile the
+      # JavaScript bundle to bytecode, and Hermes is on F-Droid's list of
+      # permitted prebuilts. Its Windows and macOS counterparts are deleted —
+      # the Windows one also carries Microsoft's msvcp140.dll.
+      - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
+      #
+      # Six dependency .gradle files that declare a maven repository by local
+      # path — "$rootDir/../node_modules/react-native/android", mavenLocal(),
+      # and similar. The scanner reads them as unknown remote repositories. They
+      # resolve to directories inside this checkout, so nothing is fetched from
+      # an unvetted host.
+      - node_modules/react-native/ReactAndroid/publish.gradle
+      - node_modules/react-native-screens/android/build.gradle
+      - node_modules/react-native-safe-area-context/android/build.gradle
+      - node_modules/react-native-svg/android/build.gradle
+      - node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
     ndk: r27b
 
-  - versionName: 1.0.2
-    versionCode: 32
-    commit: v1.0.2
+  - versionName: 1.0.3
+    versionCode: 42
+    commit: v1.0.3
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=arm64-v8a
@@ -62,6 +91,11 @@ Builds:
       - mv /opt/node-v22.23.2-linux-x64 /opt/node
       - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
     init:
+      # fdroidserver joins these with "; " into a single bash invocation whose
+      # working directory is `subdir` above, not the repository root. So cd up
+      # once, here, and the rest run from the root. Keep the number of levels in
+      # step with `subdir`.
+      - cd ../..
       - npm ci
       # Deletes every prebuilt binary in node_modules that this build does not
       # use, so the Gradle build has to succeed without them. See the notes below.
@@ -70,11 +104,34 @@ Builds:
       - yes
     rm:
       - .github
+    scanignore:
+      # Everything the scanner would otherwise flag is deleted by
+      # scripts/purge-nonfree-blobs.sh in the init step above. These are the
+      # exceptions, and each is here for a stated reason rather than to quiet
+      # the scanner:
+      #
+      # The Linux Hermes compiler. The Gradle build runs it to compile the
+      # JavaScript bundle to bytecode, and Hermes is on F-Droid's list of
+      # permitted prebuilts. Its Windows and macOS counterparts are deleted —
+      # the Windows one also carries Microsoft's msvcp140.dll.
+      - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
+      #
+      # Six dependency .gradle files that declare a maven repository by local
+      # path — "$rootDir/../node_modules/react-native/android", mavenLocal(),
+      # and similar. The scanner reads them as unknown remote repositories. They
+      # resolve to directories inside this checkout, so nothing is fetched from
+      # an unvetted host.
+      - node_modules/react-native/ReactAndroid/publish.gradle
+      - node_modules/react-native-screens/android/build.gradle
+      - node_modules/react-native-safe-area-context/android/build.gradle
+      - node_modules/react-native-svg/android/build.gradle
+      - node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
     ndk: r27b
 
-  - versionName: 1.0.2
-    versionCode: 33
-    commit: v1.0.2
+  - versionName: 1.0.3
+    versionCode: 43
+    commit: v1.0.3
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=x86_64
@@ -86,6 +143,11 @@ Builds:
       - mv /opt/node-v22.23.2-linux-x64 /opt/node
       - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
     init:
+      # fdroidserver joins these with "; " into a single bash invocation whose
+      # working directory is `subdir` above, not the repository root. So cd up
+      # once, here, and the rest run from the root. Keep the number of levels in
+      # step with `subdir`.
+      - cd ../..
       - npm ci
       # Deletes every prebuilt binary in node_modules that this build does not
       # use, so the Gradle build has to succeed without them. See the notes below.
@@ -94,6 +156,29 @@ Builds:
       - yes
     rm:
       - .github
+    scanignore:
+      # Everything the scanner would otherwise flag is deleted by
+      # scripts/purge-nonfree-blobs.sh in the init step above. These are the
+      # exceptions, and each is here for a stated reason rather than to quiet
+      # the scanner:
+      #
+      # The Linux Hermes compiler. The Gradle build runs it to compile the
+      # JavaScript bundle to bytecode, and Hermes is on F-Droid's list of
+      # permitted prebuilts. Its Windows and macOS counterparts are deleted —
+      # the Windows one also carries Microsoft's msvcp140.dll.
+      - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
+      #
+      # Six dependency .gradle files that declare a maven repository by local
+      # path — "$rootDir/../node_modules/react-native/android", mavenLocal(),
+      # and similar. The scanner reads them as unknown remote repositories. They
+      # resolve to directories inside this checkout, so nothing is fetched from
+      # an unvetted host.
+      - node_modules/react-native/ReactAndroid/publish.gradle
+      - node_modules/react-native-screens/android/build.gradle
+      - node_modules/react-native-safe-area-context/android/build.gradle
+      - node_modules/react-native-svg/android/build.gradle
+      - node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
     ndk: r27b
 
 MaintainerNotes: |-
@@ -129,25 +214,36 @@ MaintainerNotes: |-
   prebuilt Skia static libraries from GitHub Releases. Please do not accept a
   future version that reintroduces it.
 
-  `npm ci` still unpacks a few prebuilt binaries that npm packages carry for
-  other platforms. Rather than scanignore them, scripts/purge-nonfree-blobs.sh
-  deletes them in the init step and the build then has to succeed without them:
+  `npm ci` still unpacks prebuilt binaries that npm packages carry for other
+  platforms. Wherever one is not needed, scripts/purge-nonfree-blobs.sh deletes
+  it in the init step rather than asking you to take it on trust, and the build
+  then has to succeed without it:
 
     * hermes-compiler's win64 and macOS compilers. The win64 directory also
       contains Microsoft's msvcp140.dll and ICU DLLs, which are not free
-      software. The Linux hermesc is kept and used, as Hermes is permitted.
-    * fb-dotslash's Windows and macOS binaries.
+      software.
+    * every fb-dotslash binary, Linux included. dotslash launches the React
+      Native DevTools shell, which no release build touches.
+    * the iOS localisation packs under react-native/React/I18n. Android builds
+      from ReactAndroid; React/ is the Objective-C implementation.
+    * Expo's app-scaffolding template archive, node_modules/expo/template.tgz.
     * Expo's precompiled .aar modules under node_modules/*/local-maven-repo.
       These are already unused because package.json sets
       expo.autolinking.android.buildFromSource to ".*", which makes every Expo
       module compile from Java/Kotlin source; deleting them proves it.
-    * gradle-wrapper.jar inside dependency packages. The build uses android/gradlew.
+    * gradle-wrapper.jar inside dependency packages. Nothing uses them: this
+      build removes android/gradlew and its wrapper jar too, and runs the
+      buildserver's own gradle.
     * the lightningcss native module, used only by Metro's web CSS pipeline.
 
-  After that step no .so, .a, .node, .exe, .dll, .aar or .jar file remains under
-  node_modules, and the Android JS bundle is byte-for-byte identical to one built
-  with them present. Every architecture's native code in the APK is compiled from
-  source during the Gradle build.
+  What is left is the scanignore list above: the Linux hermesc, which the build
+  genuinely runs and which F-Droid permits, and six dependency .gradle files
+  that declare a maven repository by local path. `fdroid scanner` reports no
+  other problems.
+
+  The Android JS bundle is byte-for-byte identical to one built with all of the
+  deleted files present. Every architecture's native code in the APK is compiled
+  from source during the Gradle build.
 
   The released APK requests no Android permission at all. The only
   uses-permission entry is com.kidsdoodle.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION,
@@ -182,5 +278,5 @@ VercodeOperation:
   - 10 * %c + 1
   - 10 * %c + 2
   - 10 * %c + 3
-CurrentVersion: 1.0.2
-CurrentVersionCode: 33
+CurrentVersion: 1.0.3
+CurrentVersionCode: 43

@@ -1,7 +1,0 @@
-No permissions. KidsDoodle now asks Android for nothing at all — the buzz on a
-wrong PIN is gone, and the PIN pad still shakes to show the code was wrong.
-
-Much smaller download. The app is now published as one APK per phone
-architecture instead of a single build carrying all four, release builds are
-minified, and the native libraries are compressed — together taking the
-download from 94 MB to about 18 MB.
