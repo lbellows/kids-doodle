@@ -24,6 +24,9 @@ jobs:
   android:
     name: Release APK builds
     runs-on: ubuntu-latest
+    # A healthy build is ~25 min. Without a bound, a Gradle OOM thrashes until
+    # GitHub's six-hour job limit kills it — which is exactly what happened once.
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
 

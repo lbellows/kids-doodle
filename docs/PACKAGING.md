@@ -214,11 +214,17 @@ every push.
 
 ## Submitting to IzzyOnDroid
 
-Prerequisites: a FOSS licence (MIT, in `LICENSE`), a signed APK on GitHub
-Releases, and `fastlane/metadata/` populated. All are in place except
-screenshots — add at least two portrait PNGs to
-`fastlane/metadata/android/en-US/images/phoneScreenshots/` first. They are what
-users see in the app listing, so this is worth doing properly.
+Prerequisites — a FOSS licence (MIT, in `LICENSE`), a signed APK on GitHub
+Releases, and `fastlane/metadata/` populated — are all in place, including three
+portrait screenshots.
+
+Those screenshots were captured from the **web** build. It renders the same
+React Native components through react-native-web, so the layout is accurate, but
+emoji glyphs and the system font come from the desktop rather than Android.
+Replacing them with captures from a real device is worth doing before the app
+gets much traffic; drop the PNGs into
+`fastlane/metadata/android/en-US/images/phoneScreenshots/` and keep the
+`1_`/`2_`/`3_` prefixes, which set the display order.
 
 Then open an inclusion request at
 <https://gitlab.com/IzzyOnDroid/repo/-/issues> with the repository URL. Once

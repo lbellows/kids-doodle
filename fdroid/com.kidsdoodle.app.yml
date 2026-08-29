@@ -37,15 +37,16 @@ Builds:
       - ./scripts/purge-nonfree-blobs.sh
     gradle:
       - yes
-    prebuild:
-      # Runs in subdir, so this appends to android/gradle.properties. The
-      # default 2g heap is not enough to compile the C++ for six native modules.
-      - echo -e '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' >> ../gradle.properties
     rm:
       - .github
     ndk: r27b
 
 MaintainerNotes: |-
+  android/gradle.properties already sets -Xmx4g -XX:MaxMetaspaceSize=1g. The
+  Expo template's 512m metaspace is not enough once buildFromSource makes the
+  Kotlin compiler build every Expo module from source in one daemon, so no
+  memory tuning is needed in this recipe.
+
   Expo (React Native) app. The native android/ project is committed to the
   repository and regenerated with `npx expo prebuild`; CI fails the build if it
   drifts from app.json, so the checked-in project always matches the config.
