@@ -239,7 +239,13 @@ MaintainerNotes: |-
   What is left is the scanignore list above: the Linux hermesc, which the build
   genuinely runs and which F-Droid permits, and six dependency .gradle files
   that declare a maven repository by local path. `fdroid scanner` reports no
-  other problems.
+  other problems and exits 0 against the tagged source.
+
+  The scan does log one warning, "Found executable binary, possibly code", for
+  node_modules/@expo/vector-icons/.../Fonts/Fontisto.ttf. That file is an
+  ordinary TrueType font with mode 644 — `file` reports "TrueType Font data" —
+  so the heuristic is misreading it. It is a warning rather than a problem and
+  the scan still passes, which is why it is not in the scanignore list above.
 
   The Android JS bundle is byte-for-byte identical to one built with all of the
   deleted files present. Every architecture's native code in the APK is compiled

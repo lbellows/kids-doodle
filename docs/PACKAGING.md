@@ -18,20 +18,21 @@ IzzyOnDroid is the fast path and a normal stepping stone to the main repo. Do bo
 |---|---|
 | `v1.0.0` | tagged and released — **93.8 MB, too big for IzzyOnDroid** |
 | `v1.0.2` | split per ABI, minified, libraries compressed, no permissions — 17–18 MB |
-| `v1.0.3` | recipe fixes so F-Droid can build it at all; not yet tagged |
+| `v1.0.3` | tagged and released — recipe fixes so F-Droid can build it at all; **this is the one to submit** |
 | IzzyOnDroid inclusion request | **not yet opened** — Codeberg |
 | fdroiddata merge request | **not yet opened** — GitLab |
 
 The two submissions are on different forges: fdroiddata is on GitLab, and
 IzzyOnDroid's tracker is on **Codeberg** (its old GitLab repo is archived and
 read-only). Neither can be automated from this repository. They are one-time
-and independent of each other. Run the local `fdroid build` verification before
-opening the fdroiddata one.
+and independent of each other. Run the local `fdroid lint` and `fdroid scanner`
+verification before opening the fdroiddata one.
 
-Submit v1.0.2, not v1.0.0: at 93.8 MB the first release is over three times
-IzzyOnDroid's 30 MB per-APK limit and would be rejected on sight. See
-[APK size](#apk-size). 1.0.1 was never published — it existed only as a version
-string while this work was in flight.
+Submit v1.0.3. At 93.8 MB v1.0.0 is over three times IzzyOnDroid's 30 MB
+per-APK limit and would be rejected on sight (see [APK size](#apk-size)), and
+v1.0.2 predates the recipe fixes, so F-Droid cannot build it — its `init` step
+ran in the wrong directory. 1.0.1 was never published — it existed only as a
+version string while this work was in flight.
 
 ## Why the app no longer uses Skia
 
@@ -346,8 +347,8 @@ every push.
    on an emulator to prove the minified build still runs, and attaches all three
    to the GitHub Release. `scripts/check-release-apks.sh` fails the build if any
    APK is over 30 MB, contains more than one ABI, is signed with a key other
-   than the pinned certificate, or declares a permission other than `VIBRATE`
-   plus AndroidX's app-private `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
+   than the pinned certificate, or declares any permission other than AndroidX's
+   app-private `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
 
 ## Submitting to IzzyOnDroid
 
@@ -387,13 +388,15 @@ accepted, every tagged release is picked up automatically. Paste-ready body:
 > An offline drawing app for young children with a parent PIN lock. No network
 > permissions at all — `INTERNET` and `ACCESS_NETWORK_STATE` are stripped from
 > release builds — no analytics, no ads, no crash reporting, no tracking, and
-> no Google Play Services or other proprietary dependency. The only
-> user-visible permission is `VIBRATE`. It is also submitted to F-Droid proper.
+> no Google Play Services or other proprietary dependency. The APK requests no
+> Android permission at all — its only `uses-permission` entry is AndroidX's
+> app-private, signature-level `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. It is
+> also submitted to F-Droid proper.
 
 ## Submitting to F-Droid
 
-1. Tag `v1.0.0` and push it — the recipe's `commit:` field points at that tag,
-   and F-Droid builds tags, never branches.
+1. Tag the release and push it — the recipe's `commit:` field points at that
+   tag (`v1.0.3` today), and F-Droid builds tags, never branches.
 2. Verify the recipe locally before submitting. Do not skip this: the first
    time it was run, it found that the recipe's `init` commands never executed
    and that the scanner reported 46 problems per build entry. Neither is
@@ -439,8 +442,8 @@ accepted, every tagged release is picked up automatically. Paste-ready body:
 4. Fork <https://gitlab.com/fdroid/fdroiddata>, add
    `metadata/com.kidsdoodle.app.yml`, and open a merge request. Title it
    `New app: KidsDoodle (com.kidsdoodle.app)`; the description only needs to
-   say it is a new app, that the build was verified locally with
-   `fdroid build -v -l`, and to point at the `MaintainerNotes` in the recipe,
+   say it is a new app, that the recipe was verified locally with `fdroid lint`
+   and `fdroid scanner`, and to point at the `MaintainerNotes` in the recipe,
    which already answer the Skia, prebuilt-binary and permission questions a
    reviewer will raise.
 5. Keep `fdroid/com.kidsdoodle.app.yml` in this repo in sync with what you
@@ -459,14 +462,23 @@ if the build recipe itself has to change.
   matching `VercodeOperation` lines. fdroidserver copies the last N build
   blocks — one per operation — and assigns the sorted versionCodes in order, so
   the blocks must stay in ascending offset order.
-- How `node_modules` is handled. The recipe carries **no `scanignore` and no
-  `scandelete`**: `scripts/purge-nonfree-blobs.sh` runs in the `init` step and
-  deletes every prebuilt binary the Android build does not use, so the scanner
-  finds nothing to complain about and the build has to succeed without them.
-  `scandelete: node_modules` would be wrong here — Expo autolinking resolves
-  every native module from `node_modules` during Gradle *configuration*, so
-  removing the whole tree breaks the build. The purge is the narrower version of
-  that idea: delete the binaries, keep the sources.
+- How `node_modules` is handled. `scripts/purge-nonfree-blobs.sh` runs in the
+  `init` step and deletes every prebuilt binary the Android build does not use,
+  so the build has to succeed without them rather than a reviewer being asked to
+  take them on trust. What survives that is a short, itemised **`scanignore`**:
+  the Linux `hermesc`, which the build genuinely runs and which F-Droid permits,
+  and six dependency `.gradle` files that declare a maven repository by local
+  path. There is deliberately no **`scandelete`** — `scandelete: node_modules`
+  would be wrong here, because Expo autolinking resolves every native module
+  from `node_modules` during Gradle *configuration*, so removing the whole tree
+  breaks the build. The purge is the narrower version of that idea: delete the
+  binaries, keep the sources.
+- One scanner **warning** that is a false positive: "Found executable binary,
+  possibly code" for
+  `node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Fontisto.ttf`.
+  It is an ordinary TrueType font, mode 644 — `file` reports "TrueType Font
+  data". `fdroid scanner` still exits 0, so it is a warning rather than a
+  problem and is not in `scanignore`.
 - The pinned Node.js tarball and its SHA-256. If you bump the Node version in
   the recipe, update the checksum from
   `https://nodejs.org/dist/<version>/SHASUMS256.txt`.

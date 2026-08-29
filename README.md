@@ -96,7 +96,7 @@ The app is packaged for **F-Droid** and **IzzyOnDroid** rather than Google Play.
 See **[docs/PACKAGING.md](docs/PACKAGING.md)** for the release process, the
 keystore setup, and the submission steps for both.
 
-The released APK declares a single permission, `VIBRATE`. It has no network
+The released APK requests no Android permission at all. It has no network
 access, no ads, no analytics and no third-party SDKs.
 
 ## Building a release APK
