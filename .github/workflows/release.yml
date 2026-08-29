@@ -73,12 +73,24 @@ jobs:
           APK=android/app/build/outputs/apk/release/app-release.apk
           BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
 
-          # A debug-signed APK would be rejected by IzzyOnDroid and is unsafe to
-          # install; it means the keystore env vars did not reach Gradle.
+          # Android identifies an app by package name + signing certificate, so
+          # an APK signed with any other key is a different app to every device
+          # that already has this one installed: users would have to uninstall
+          # and reinstall to update. Pin the exact certificate rather than just
+          # checking it is not the debug key.
+          EXPECTED_CERT=a673f800d5c5d0eb63cf40cfa66253d0530bcf8a30fc866406c88cdd5e27ef31
           CERTS="$("$BUILD_TOOLS/apksigner" verify --print-certs "$APK")"
           echo "$CERTS"
-          if echo "$CERTS" | grep -q "CN=Android Debug"; then
-            echo "::error::APK is signed with the debug key, not the release key."
+          ACTUAL_CERT="$(echo "$CERTS" \
+            | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
+          if [ "$ACTUAL_CERT" != "$EXPECTED_CERT" ]; then
+            echo "::error::APK is signed with the wrong key."
+            echo "Expected certificate SHA-256: $EXPECTED_CERT"
+            echo "Actual certificate SHA-256:   ${ACTUAL_CERT:-(none)}"
+            if echo "$CERTS" | grep -q "CN=Android Debug"; then
+              echo "It is the public debug key: the ANDROID_* secrets did not"
+              echo "reach Gradle. Check they are set on this repository."
+            fi
             exit 1
           fi
 
@@ -105,7 +117,7 @@ jobs:
             echo "plugins/withOfflineReleaseManifest.js did not apply."
             exit 1
           fi
-          echo "OK — release-signed, no network permissions."
+          echo "OK — signed with the expected release key, no network permissions."
 
       - name: Name the APK after the release
         run: |

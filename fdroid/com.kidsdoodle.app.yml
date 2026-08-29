@@ -89,9 +89,11 @@ MaintainerNotes: |-
   is contributed by React Native core's library manifest for a networking stack
   this app never uses. A release-only manifest overlay
   (plugins/withOfflineReleaseManifest.js) removes both, and CI fails the build if
-  the released APK declares anything other than VIBRATE. There is no analytics, advertising or crash reporting, and no
-  Google Play Services or other proprietary dependency. Every runtime dependency
-  is MIT, Apache-2.0, BSD or ISC licensed.
+  the released APK's permission set is anything other than exactly those two.
+
+  There is no analytics, advertising or crash reporting, and no Google Play
+  Services or other proprietary dependency. Every runtime dependency is MIT,
+  Apache-2.0, BSD or ISC licensed.
 
   expo-updates is deliberately not a dependency, so there is no over-the-air
   code delivery: the JavaScript bundle is compiled into the APK at build time
