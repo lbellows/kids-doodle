@@ -1,0 +1,6 @@
+Packaging only — the app itself is unchanged from 1.0.2.
+
+The F-Droid build recipe was verified against F-Droid's own tooling for the
+first time and did not work: the setup commands ran in the wrong directory, and
+their source scanner flagged prebuilt files that the build never needs. Both are
+fixed, so KidsDoodle can be built and published by F-Droid itself.

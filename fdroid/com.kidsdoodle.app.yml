@@ -25,9 +25,9 @@ Builds:
   # here produces exactly one APK. Each APK's versionCode is
   # `expo.android.versionCode * 10 + <abi offset>` (armeabi-v7a 1, arm64-v8a 2,
   # x86_64 3), assigned in plugins/withAbiSplits.js.
-  - versionName: 1.0.2
-    versionCode: 31
-    commit: v1.0.2
+  - versionName: 1.0.3
+    versionCode: 41
+    commit: v1.0.3
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=armeabi-v7a
@@ -77,9 +77,9 @@ Builds:
       - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
     ndk: r27b
 
-  - versionName: 1.0.2
-    versionCode: 32
-    commit: v1.0.2
+  - versionName: 1.0.3
+    versionCode: 42
+    commit: v1.0.3
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=arm64-v8a
@@ -129,9 +129,9 @@ Builds:
       - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
     ndk: r27b
 
-  - versionName: 1.0.2
-    versionCode: 33
-    commit: v1.0.2
+  - versionName: 1.0.3
+    versionCode: 43
+    commit: v1.0.3
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=x86_64
@@ -278,5 +278,5 @@ VercodeOperation:
   - 10 * %c + 1
   - 10 * %c + 2
   - 10 * %c + 3
-CurrentVersion: 1.0.2
-CurrentVersionCode: 33
+CurrentVersion: 1.0.3
+CurrentVersionCode: 43
