@@ -30,9 +30,6 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# generated web assets
-public/canvaskit.wasm
-
 # local env files
 .env
 .env*.local
@@ -42,4 +39,23 @@ public/canvaskit.wasm
 
 # generated native folders
 /ios
-/android
+
+# android/ is deliberately committed, not ignored: F-Droid builds it directly
+# with gradle and must not depend on `expo prebuild` behaving identically in
+# their buildserver. Regenerate with `npx expo prebuild --platform android`
+# after changing app.json, then review the diff.
+android/.gradle/
+android/.cxx/
+android/build/
+android/app/build/
+android/local.properties
+
+# Release signing — never commit the keystore or its passwords
+*.keystore
+*.jks
+android/keystore.properties
+
+# ...but the standard public Android debug key must be committed: the release
+# build falls back to it when no release keystore is configured, which is how
+# F-Droid builds this app from source before signing it with their own key.
+!android/app/debug.keystore

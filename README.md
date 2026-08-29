@@ -11,11 +11,12 @@ A drawing app for kids with a parent-lock feature. Kids can draw freely; parents
 | Runtime | Expo SDK 55 / React Native 0.83 |
 | Language | TypeScript (strict) |
 | Navigation | expo-router (file-based) |
-| Drawing — Android | @shopify/react-native-skia 2.4.18 |
+| Drawing — Android | react-native-svg 15 (MIT, builds from source — see [docs/PACKAGING.md](docs/PACKAGING.md)) |
 | Drawing — Web | HTML5 `<canvas>` (platform file: `DrawingCanvas.web.tsx`) |
 | Touch input | react-native-gesture-handler v2 (Gesture API) |
 | PIN storage | AsyncStorage + expo-crypto SHA-256 |
 | Android nav bar | expo-navigation-bar (hidden in lock mode) |
+| Screen wake | expo-keep-awake (screen stays on while drawing) |
 
 ## Project Structure
 
@@ -27,10 +28,10 @@ app/
   settings.tsx     Change PIN (requires current PIN)
 
 components/
-  DrawingCanvas.tsx      Native: Skia canvas + RNGH PanGesture
-  DrawingCanvas.web.tsx  Web: HTML5 <canvas> (Skia is never imported on web)
+  DrawingCanvas.tsx      Native: react-native-svg <Path> + RNGH PanGesture
+  DrawingCanvas.web.tsx  Web: HTML5 <canvas>
   ColorPicker.tsx        8-swatch color picker
-  Toolbar.tsx            Colors + S/M/L brush + eraser + clear
+  Toolbar.tsx            Colors + S/M/L brush + eraser + undo + clear
   PinPad.tsx             4-digit numeric pad with shake animation
 
 hooks/
@@ -40,8 +41,13 @@ hooks/
 utils/
   hash.ts            expo-crypto SHA-256 wrapper
 
-public/
-  canvaskit.wasm     CanvasKit WASM (copied by setup-canvaskit.js; Metro web only)
+plugins/
+  withReleaseSigning.js          Release keystore instead of the debug key
+  withOfflineReleaseManifest.js  Drops INTERNET from release builds
+
+android/                         Committed, not generated at build time
+fastlane/metadata/               Store listing for F-Droid and IzzyOnDroid
+fdroid/com.kidsdoodle.app.yml    F-Droid build recipe
 ```
 
 ## Setup
@@ -49,8 +55,8 @@ public/
 ### Prerequisites
 
 - Node.js 18+
-- Expo Go on Android ([Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent))
-- For EAS builds: an [Expo account](https://expo.dev) + `npm install -g eas-cli`
+- Expo Go on Android, or a local debug build (`npm run android`)
+- For a release build: JDK 17 + the Android SDK, or just push a tag and let CI do it
 
 ### Install
 
@@ -68,7 +74,7 @@ npx expo start
 
 Scan the QR code with Expo Go on Android.
 
-> **Note:** `expo-navigation-bar` (hiding the system nav bar while locked) only works in a native/EAS build. All other features work in Expo Go.
+> **Note:** `expo-navigation-bar` (hiding the system nav bar while locked) only works in a native build (`npm run android`). All other features work in Expo Go.
 
 ### Run on Android emulator
 
@@ -82,27 +88,40 @@ npx expo start --android
 npx expo start --web
 ```
 
-The web version uses an HTML5 canvas instead of Skia. Full feature parity except the nav-bar hiding (web has no system nav bar).
+The web version uses an HTML5 canvas rather than react-native-svg. Full feature parity except the nav-bar hiding (web has no system nav bar).
 
-## EAS Build (Android)
+## Distribution
+
+The app is packaged for **F-Droid** and **IzzyOnDroid** rather than Google Play.
+See **[docs/PACKAGING.md](docs/PACKAGING.md)** for the release process, the
+keystore setup, and the submission steps for both.
+
+The released APK declares a single permission, `VIBRATE`. It has no network
+access, no ads, no analytics and no third-party SDKs.
+
+## Building a release APK
+
+The app is not built with EAS or shipped to Google Play, so there is no
+`eas.json`. Release APKs are built from the committed `android/` project:
 
 ```bash
-eas login
-eas build --platform android --profile preview   # APK  (internal testing)
-eas build --platform android --profile production # AAB  (Play Store)
+cd android && ./gradlew assembleRelease      # debug-signed, like F-Droid's build
 ```
 
-The `development` profile builds a debug APK with Expo Dev Client for native-module testing.
+Pushing a `v*` tag builds and signs one in CI and attaches it to a GitHub
+Release. See [docs/PACKAGING.md](docs/PACKAGING.md).
 
 ## Features
 
 | Feature | Android | Web |
 |---|---|---|
-| Freehand drawing | Skia canvas | HTML5 canvas |
+| Freehand drawing | SVG paths | HTML5 canvas |
 | 8 preset colors | ✓ | ✓ |
 | Brush sizes (S / M / L) | ✓ | ✓ |
 | Eraser | ✓ | ✓ |
+| Undo last stroke | ✓ | ✓ |
 | Clear canvas | ✓ | ✓ |
+| Keep screen awake | ✓ | n/a |
 | Lock screen (PIN overlay) | ✓ | ✓ |
 | Wrong-PIN shake + vibrate | ✓ | shake only |
 | Hide system nav bar | ✓ | n/a |
@@ -127,5 +146,6 @@ The `development` profile builds a debug APK with Expo Dev Client for native-mod
 ## Known Issues / Notes
 
 - **Expo Go + nav bar**: `expo-navigation-bar` is a native module; the lock-screen nav-bar-hiding feature requires a native build via EAS (`preview` or `development` profile).
-- **Web + Skia**: Skia's web bundle evaluates `JsiSkApi(global.CanvasKit)` synchronously at module load, before CanvasKit WASM can be async-loaded. The solution is the `.web.tsx` platform file — Metro bundles `DrawingCanvas.web.tsx` for web and `DrawingCanvas.tsx` for native, so Skia is never imported on web.
+- **No Skia**: the native canvas uses `react-native-svg`, not `@shopify/react-native-skia`. Skia downloads prebuilt static libraries from GitHub Releases at install time, which disqualifies the app from F-Droid. Don't reintroduce it. See [docs/PACKAGING.md](docs/PACKAGING.md).
 - **Metro platform resolution**: `metro.config.js` explicitly adds `'web'` to `resolver.platforms`; without this, Metro ignores `.web.tsx` files even when bundling for web.
+- **`android/` is committed**: regenerate it with `npx expo prebuild --platform android` after changing `app.json` or `plugins/`, and commit the diff. CI fails if it is out of sync.

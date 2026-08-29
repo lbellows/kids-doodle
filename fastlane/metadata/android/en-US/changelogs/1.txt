@@ -1,0 +1,5 @@
+First release.
+
+* Full-screen drawing with colours, brush sizes, eraser, undo and clear
+* Parent PIN lock that hides the navigation bar and blocks the back button
+* Fully offline: no network permission, no adverts, no trackers

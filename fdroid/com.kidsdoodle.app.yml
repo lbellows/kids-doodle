@@ -1,0 +1,107 @@
+# F-Droid build recipe for KidsDoodle.
+#
+# This file is not used by this repository — it is the metadata to submit to
+# https://gitlab.com/fdroid/fdroiddata as metadata/com.kidsdoodle.app.yml.
+# It is kept here so the recipe is versioned alongside the code it builds.
+# See docs/PACKAGING.md for the submission procedure.
+
+Categories:
+  - Graphics
+License: MIT
+AuthorName: LB
+SourceCode: https://github.com/lbellows/kids-doodle
+IssueTracker: https://github.com/lbellows/kids-doodle/issues
+Changelog: https://github.com/lbellows/kids-doodle/releases
+
+AutoName: KidsDoodle
+
+RepoType: git
+Repo: https://github.com/lbellows/kids-doodle.git
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v1.0.0
+    subdir: android/app
+    sudo:
+      # Node.js official binaries are a permitted prebuilt source.
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
+      - echo "d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307  node.tar.xz" | sha256sum -c -
+      - tar xf node.tar.xz --directory=/opt
+      - mv /opt/node-v22.23.2-linux-x64 /opt/node
+      - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+    init:
+      - npm ci
+      # Deletes every prebuilt binary in node_modules that this build does not
+      # use, so the Gradle build has to succeed without them. See the notes below.
+      - ./scripts/purge-nonfree-blobs.sh
+    gradle:
+      - yes
+    rm:
+      - .github
+    ndk: r27b
+
+MaintainerNotes: |-
+  android/gradle.properties already sets -Xmx4g -XX:MaxMetaspaceSize=1g. The
+  Expo template's 512m metaspace is not enough once buildFromSource makes the
+  Kotlin compiler build every Expo module from source in one daemon, so no
+  memory tuning is needed in this recipe.
+
+  Expo (React Native) app. The native android/ project is committed to the
+  repository and regenerated with `npx expo prebuild`; CI fails the build if it
+  drifts from app.json, so the checked-in project always matches the config.
+
+  No prebuilt binaries are downloaded at install time. The dependency tree has
+  zero preinstall/install/postinstall scripts, so `npm ci` only unpacks registry
+  tarballs. @shopify/react-native-skia was deliberately dropped in favour of
+  react-native-svg (MIT, pure Java) precisely because its postinstall fetched
+  prebuilt Skia static libraries from GitHub Releases. Please do not accept a
+  future version that reintroduces it.
+
+  `npm ci` still unpacks a few prebuilt binaries that npm packages carry for
+  other platforms. Rather than scanignore them, scripts/purge-nonfree-blobs.sh
+  deletes them in the init step and the build then has to succeed without them:
+
+    * hermes-compiler's win64 and macOS compilers. The win64 directory also
+      contains Microsoft's msvcp140.dll and ICU DLLs, which are not free
+      software. The Linux hermesc is kept and used, as Hermes is permitted.
+    * fb-dotslash's Windows and macOS binaries.
+    * Expo's precompiled .aar modules under node_modules/*/local-maven-repo.
+      These are already unused because package.json sets
+      expo.autolinking.android.buildFromSource to ".*", which makes every Expo
+      module compile from Java/Kotlin source; deleting them proves it.
+    * gradle-wrapper.jar inside dependency packages. The build uses android/gradlew.
+    * the lightningcss native module, used only by Metro's web CSS pipeline.
+
+  After that step no .so, .a, .node, .exe, .dll, .aar or .jar file remains under
+  node_modules, and the Android JS bundle is byte-for-byte identical to one built
+  with them present. Every architecture's native code in the APK is compiled from
+  source during the Gradle build.
+
+  The released APK declares one permission that a user ever sees: VIBRATE, for
+  the wrong-PIN buzz. It also carries
+  com.kidsdoodle.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION, which AndroidX
+  core generates, namespaced to the app's own package with
+  protectionLevel="signature"; it is app-private, grants nothing to any other
+  app, and is required by ContextCompat.registerReceiver. It has no network
+  permissions at all: INTERNET is declared only in debug
+  builds so the device can reach the Metro dev server, and ACCESS_NETWORK_STATE
+  is contributed by React Native core's library manifest for a networking stack
+  this app never uses. A release-only manifest overlay
+  (plugins/withOfflineReleaseManifest.js) removes both, and CI fails the build if
+  the released APK declares anything other than VIBRATE. There is no analytics, advertising or crash reporting, and no
+  Google Play Services or other proprietary dependency. Every runtime dependency
+  is MIT, Apache-2.0, BSD or ISC licensed.
+
+  expo-updates is deliberately not a dependency, so there is no over-the-air
+  code delivery: the JavaScript bundle is compiled into the APK at build time
+  and cannot be replaced after installation. The manifest meta-data that the
+  Expo template emits for expo-updates is stripped by a config plugin
+  (plugins/withoutUpdatesMetadata.js) so the manifest does not imply otherwise.
+
+  Hermes is enabled and consumed as an official prebuilt, as permitted.
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

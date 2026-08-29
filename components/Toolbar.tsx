@@ -16,6 +16,8 @@ interface Props {
   onColorChange: (c: string) => void;
   onBrushSizeChange: (s: BrushSize) => void;
   onEraserToggle: () => void;
+  onUndo: () => void;
+  canUndo: boolean;
   onClear: () => void;
 }
 
@@ -26,6 +28,8 @@ export function Toolbar({
   onColorChange,
   onBrushSizeChange,
   onEraserToggle,
+  onUndo,
+  canUndo,
   onClear,
 }: Props) {
   return (
@@ -52,6 +56,15 @@ export function Toolbar({
       >
         <Text style={styles.icon}>⬜</Text>
       </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.iconBtn, !canUndo && styles.iconBtnDisabled]}
+        onPress={onUndo}
+        disabled={!canUndo}
+        activeOpacity={0.7}
+        accessibilityLabel="Undo last stroke"
+      >
+        <Text style={[styles.icon, !canUndo && styles.iconDisabled]}>↩️</Text>
+      </TouchableOpacity>
       <TouchableOpacity style={styles.iconBtn} onPress={onClear} activeOpacity={0.7}>
         <Text style={styles.icon}>🗑️</Text>
       </TouchableOpacity>
@@ -66,7 +79,15 @@ export function brushSizeToPx(size: BrushSize): number {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
+    // The row is ~690px of controls; every phone is narrower than that, so
+    // without wrapping the eraser, undo and clear buttons fall off the right
+    // edge and cannot be reached. Wrapping to a second row keeps them all
+    // visible — preferable to horizontal scrolling for an app aimed at
+    // children, who will not discover a scroll affordance.
+    flexWrap: 'wrap',
     alignItems: 'center',
+    justifyContent: 'center',
+    rowGap: 8,
     backgroundColor: 'rgba(255,255,255,0.95)',
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -108,6 +129,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconBtnDisabled: {
+    opacity: 0.35,
+  },
+  iconDisabled: {
+    opacity: 0.5,
   },
   iconBtnActive: {
     backgroundColor: '#FFE0E0',
