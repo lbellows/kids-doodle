@@ -43,6 +43,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Remove prebuilt binaries the Android build does not use
+        run: npm run purge:blobs
+
       # No keystore is configured here on purpose: withReleaseSigning falls back
       # to debug signing when there is none, which is exactly what F-Droid's
       # buildserver does. This job proves the source builds; release.yml proves

@@ -44,6 +44,9 @@ jobs:
       - name: Verify android/ matches app.json and the changelog exists
         run: npm run prebuild:check
 
+      - name: Remove prebuilt binaries the Android build does not use
+        run: npm run purge:blobs
+
       - name: Decode release keystore
         env:
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}

@@ -45,6 +45,11 @@ Before adding any dependency, check it has no install hook:
 npm ls --all --json | grep -c '"postinstall"'   # must stay 0
 ```
 
+`scripts/purge-nonfree-blobs.sh` deletes every prebuilt binary in `node_modules`
+that the Android build does not use — including Microsoft DLLs shipped with the
+Windows Hermes compiler — and CI builds the APK with them gone. Don't add a
+dependency whose Android build needs a binary that survives that purge.
+
 `package.json` sets `expo.autolinking.android.buildFromSource: [".*"]`, which opts
 out of Expo SDK 55's precompiled `.aar` modules. Don't remove it.
 

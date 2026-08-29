@@ -32,6 +32,9 @@ Builds:
       - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
     init:
       - npm ci
+      # Deletes every prebuilt binary in node_modules that this build does not
+      # use, so the Gradle build has to succeed without them. See the notes below.
+      - ./scripts/purge-nonfree-blobs.sh
     gradle:
       - yes
     prebuild:
@@ -40,16 +43,6 @@ Builds:
       - echo -e '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' >> ../gradle.properties
     rm:
       - .github
-    scanignore:
-      # node_modules must survive to build time — Expo autolinking resolves every
-      # native module from it during Gradle configuration, so it cannot be
-      # scandelete'd. What the scanner finds inside it is build-time only:
-      #   * React Native's prebuilt tooling (hermesc, the Gradle plugin jars)
-      #   * Expo's precompiled .aar modules, which this build does not use —
-      #     package.json sets expo.autolinking.android.buildFromSource to ".*",
-      #     so every Expo module is compiled from Java/Kotlin source instead.
-      # Neither is packaged into the APK.
-      - node_modules
     ndk: r27b
 
 MaintainerNotes: |-
@@ -63,6 +56,26 @@ MaintainerNotes: |-
   react-native-svg (MIT, pure Java) precisely because its postinstall fetched
   prebuilt Skia static libraries from GitHub Releases. Please do not accept a
   future version that reintroduces it.
+
+  `npm ci` still unpacks a few prebuilt binaries that npm packages carry for
+  other platforms. Rather than scanignore them, scripts/purge-nonfree-blobs.sh
+  deletes them in the init step and the build then has to succeed without them:
+
+    * hermes-compiler's win64 and macOS compilers. The win64 directory also
+      contains Microsoft's msvcp140.dll and ICU DLLs, which are not free
+      software. The Linux hermesc is kept and used, as Hermes is permitted.
+    * fb-dotslash's Windows and macOS binaries.
+    * Expo's precompiled .aar modules under node_modules/*/local-maven-repo.
+      These are already unused because package.json sets
+      expo.autolinking.android.buildFromSource to ".*", which makes every Expo
+      module compile from Java/Kotlin source; deleting them proves it.
+    * gradle-wrapper.jar inside dependency packages. The build uses android/gradlew.
+    * the lightningcss native module, used only by Metro's web CSS pipeline.
+
+  After that step no .so, .a, .node, .exe, .dll, .aar or .jar file remains under
+  node_modules, and the Android JS bundle is byte-for-byte identical to one built
+  with them present. Every architecture's native code in the APK is compiled from
+  source during the Gradle build.
 
   The released APK declares one permission, VIBRATE, used for the wrong-PIN
   buzz. INTERNET is declared only in debug builds so the device can reach the

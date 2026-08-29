@@ -1,7 +1,10 @@
 /**
- * Web-only DrawingCanvas — uses HTML5 <canvas> so Skia / CanvasKit
- * is never imported on the web bundle.
+ * Web-only DrawingCanvas — uses HTML5 <canvas> directly.
  * Metro resolves this file instead of DrawingCanvas.tsx when bundling for web.
+ *
+ * The native canvas draws with react-native-svg; this one uses the DOM canvas
+ * because it is already here, faster for incremental strokes, and gives a real
+ * destination-out eraser rather than painting the background colour.
  *
  * Strokes are retained as point lists so undo (and resize) can replay them.
  * The in-progress stroke is still drawn incrementally, so live drawing never

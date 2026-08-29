@@ -38,6 +38,42 @@ Two related settings exist for the same reason:
   npm ls --all --json | grep -c '"postinstall"'   # expect 0
   ```
 
+## Prebuilt binaries in node_modules
+
+`npm ci` still unpacks a handful of prebuilt binaries that packages carry for
+other platforms. The Android build uses none of them. Rather than ask a reviewer
+to take that on trust with `scanignore`, `scripts/purge-nonfree-blobs.sh` deletes
+them and the build then has to succeed without them. It runs in CI and in the
+F-Droid recipe's `init` step, after `npm ci` and before Gradle.
+
+| Removed | Why |
+|---|---|
+| `hermes-compiler/hermesc/win64-bin`, `osx-bin` | Windows/macOS compilers. **win64-bin also ships Microsoft's `msvcp140.dll` and ICU DLLs, which are not free software.** The Linux `hermesc` is kept — Hermes is a permitted prebuilt and the build uses it. |
+| `fb-dotslash/bin/{windows,windows-arm64,macos}` | Other platforms' binaries |
+| `*/local-maven-repo/**.aar` | Expo's precompiled modules, already unused because `buildFromSource` is `".*"` — deleting them proves it |
+| `gradle-wrapper.jar` under `node_modules` | The build uses `android/gradlew` |
+| `lightningcss-*` native module | Metro's web CSS pipeline only |
+
+Afterwards no `.so`, `.a`, `.node`, `.exe`, `.dll`, `.aar` or `.jar` remains under
+`node_modules`, and the Android JS bundle is byte-for-byte identical to one built
+with them present.
+
+Do not run this during normal development — it removes the lightningcss binary
+that web bundling uses. `npm ci` restores everything.
+
+## Dependency licences
+
+All 641 packages in the tree declare a licence and every one is FOSS — 544 MIT,
+38 ISC, 15 BSD-3-Clause, 12 Apache-2.0, 12 BSD-2-Clause, and a handful of
+BlueOak-1.0.0, MPL-2.0, CC0, Unlicense, 0BSD, Python-2.0 and CC-BY-4.0 (the last
+being `caniuse-lite`'s browser data, build-time only). There is no Google Play
+Services, Firebase, analytics, advertising or crash reporting anywhere in the
+tree. Re-run the audit after changing dependencies:
+
+```sh
+npm ls --all --json > /tmp/deps.json   # then inspect "license" fields
+```
+
 ## Repository layout for packaging
 
 ```
@@ -46,6 +82,7 @@ plugins/withReleaseSigning.js         real release key instead of the debug key
 plugins/withOfflineReleaseManifest.js drops INTERNET from release builds
 plugins/withoutUpdatesMetadata.js     strips inert expo-updates manifest entries
 scripts/check-release-metadata.sh     guards android/ sync + changelog presence
+scripts/purge-nonfree-blobs.sh        deletes unused prebuilt binaries before Gradle
 fastlane/metadata/android/en-US/      store listing, read by both F-Droid and IzzyOnDroid
 fdroid/com.kidsdoodle.app.yml         the recipe to submit to fdroiddata
 .github/workflows/ci.yml              typecheck + full release build, no secrets

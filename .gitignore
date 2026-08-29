@@ -50,6 +50,12 @@ android/build/
 android/app/build/
 android/local.properties
 
-# Release keystore config — never commit
-android/keystore.properties
+# Release signing — never commit the keystore or its passwords
 *.keystore
+*.jks
+android/keystore.properties
+
+# ...but the standard public Android debug key must be committed: the release
+# build falls back to it when no release keystore is configured, which is how
+# F-Droid builds this app from source before signing it with their own key.
+!android/app/debug.keystore
