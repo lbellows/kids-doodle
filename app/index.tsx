@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as NavigationBar from 'expo-navigation-bar';
+import { useKeepAwake } from 'expo-keep-awake';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DrawingCanvas, DrawingCanvasRef } from '../components/DrawingCanvas';
@@ -27,6 +28,10 @@ export default function DrawScreen() {
   const [color, setColor] = React.useState(COLORS[0]);
   const [brushSize, setBrushSize] = React.useState<BrushSize>('medium');
   const [eraser, setEraser] = React.useState(false);
+  const [canUndo, setCanUndo] = React.useState(false);
+
+  // Kids put the tablet down mid-drawing; don't let the screen sleep on them.
+  useKeepAwake();
 
   // Redirect to PIN setup if no PIN configured
   useEffect(() => {
@@ -67,6 +72,7 @@ export default function DrawScreen() {
         strokeWidth={brushSizeToPx(brushSize)}
         eraser={eraser}
         locked={locked}
+        onHistoryChange={setCanUndo}
       />
 
       {/* Toolbar — hidden when locked */}
@@ -79,6 +85,8 @@ export default function DrawScreen() {
             onColorChange={setColor}
             onBrushSizeChange={setBrushSize}
             onEraserToggle={() => setEraser((e) => !e)}
+            onUndo={() => canvasRef.current?.undo()}
+            canUndo={canUndo}
             onClear={() => canvasRef.current?.clear()}
           />
         </SafeAreaView>

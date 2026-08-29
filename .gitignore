@@ -30,9 +30,6 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# generated web assets
-public/canvaskit.wasm
-
 # local env files
 .env
 .env*.local
@@ -42,4 +39,17 @@ public/canvaskit.wasm
 
 # generated native folders
 /ios
-/android
+
+# android/ is deliberately committed, not ignored: F-Droid builds it directly
+# with gradle and must not depend on `expo prebuild` behaving identically in
+# their buildserver. Regenerate with `npx expo prebuild --platform android`
+# after changing app.json, then review the diff.
+android/.gradle/
+android/.cxx/
+android/build/
+android/app/build/
+android/local.properties
+
+# Release keystore config — never commit
+android/keystore.properties
+*.keystore

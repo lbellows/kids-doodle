@@ -1,0 +1,86 @@
+# F-Droid build recipe for KidsDoodle.
+#
+# This file is not used by this repository — it is the metadata to submit to
+# https://gitlab.com/fdroid/fdroiddata as metadata/com.kidsdoodle.app.yml.
+# It is kept here so the recipe is versioned alongside the code it builds.
+# See docs/PACKAGING.md for the submission procedure.
+
+Categories:
+  - Graphics
+License: MIT
+AuthorName: LB
+SourceCode: https://github.com/lbellows/kids-doodle
+IssueTracker: https://github.com/lbellows/kids-doodle/issues
+Changelog: https://github.com/lbellows/kids-doodle/releases
+
+AutoName: KidsDoodle
+
+RepoType: git
+Repo: https://github.com/lbellows/kids-doodle.git
+
+Builds:
+  - versionName: 1.0.0
+    versionCode: 1
+    commit: v1.0.0
+    subdir: android/app
+    sudo:
+      # Node.js official binaries are a permitted prebuilt source.
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
+      - echo "d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307  node.tar.xz" | sha256sum -c -
+      - tar xf node.tar.xz --directory=/opt
+      - mv /opt/node-v22.23.2-linux-x64 /opt/node
+      - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+    init:
+      - npm ci
+    gradle:
+      - yes
+    prebuild:
+      # Runs in subdir, so this appends to android/gradle.properties. The
+      # default 2g heap is not enough to compile the C++ for six native modules.
+      - echo -e '\norg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g' >> ../gradle.properties
+    rm:
+      - .github
+    scanignore:
+      # node_modules must survive to build time — Expo autolinking resolves every
+      # native module from it during Gradle configuration, so it cannot be
+      # scandelete'd. What the scanner finds inside it is build-time only:
+      #   * React Native's prebuilt tooling (hermesc, the Gradle plugin jars)
+      #   * Expo's precompiled .aar modules, which this build does not use —
+      #     package.json sets expo.autolinking.android.buildFromSource to ".*",
+      #     so every Expo module is compiled from Java/Kotlin source instead.
+      # Neither is packaged into the APK.
+      - node_modules
+    ndk: r27b
+
+MaintainerNotes: |-
+  Expo (React Native) app. The native android/ project is committed to the
+  repository and regenerated with `npx expo prebuild`; CI fails the build if it
+  drifts from app.json, so the checked-in project always matches the config.
+
+  No prebuilt binaries are downloaded at install time. The dependency tree has
+  zero preinstall/install/postinstall scripts, so `npm ci` only unpacks registry
+  tarballs. @shopify/react-native-skia was deliberately dropped in favour of
+  react-native-svg (MIT, pure Java) precisely because its postinstall fetched
+  prebuilt Skia static libraries from GitHub Releases. Please do not accept a
+  future version that reintroduces it.
+
+  The released APK declares one permission, VIBRATE, used for the wrong-PIN
+  buzz. INTERNET is declared only in debug builds so the device can reach the
+  Metro dev server; a release-only manifest overlay
+  (plugins/withOfflineReleaseManifest.js) removes it, so the shipped APK has no
+  network access. There is no analytics, advertising or crash reporting, and no
+  Google Play Services or other proprietary dependency. Every runtime dependency
+  is MIT, Apache-2.0, BSD or ISC licensed.
+
+  expo-updates is deliberately not a dependency, so there is no over-the-air
+  code delivery: the JavaScript bundle is compiled into the APK at build time
+  and cannot be replaced after installation. The manifest meta-data that the
+  Expo template emits for expo-updates is stripped by a config plugin
+  (plugins/withoutUpdatesMetadata.js) so the manifest does not imply otherwise.
+
+  Hermes is enabled and consumed as an official prebuilt, as permitted.
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
+CurrentVersion: 1.0.0
+CurrentVersionCode: 1

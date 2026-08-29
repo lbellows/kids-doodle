@@ -16,6 +16,8 @@ interface Props {
   onColorChange: (c: string) => void;
   onBrushSizeChange: (s: BrushSize) => void;
   onEraserToggle: () => void;
+  onUndo: () => void;
+  canUndo: boolean;
   onClear: () => void;
 }
 
@@ -26,6 +28,8 @@ export function Toolbar({
   onColorChange,
   onBrushSizeChange,
   onEraserToggle,
+  onUndo,
+  canUndo,
   onClear,
 }: Props) {
   return (
@@ -51,6 +55,15 @@ export function Toolbar({
         activeOpacity={0.7}
       >
         <Text style={styles.icon}>⬜</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.iconBtn, !canUndo && styles.iconBtnDisabled]}
+        onPress={onUndo}
+        disabled={!canUndo}
+        activeOpacity={0.7}
+        accessibilityLabel="Undo last stroke"
+      >
+        <Text style={[styles.icon, !canUndo && styles.iconDisabled]}>↩️</Text>
       </TouchableOpacity>
       <TouchableOpacity style={styles.iconBtn} onPress={onClear} activeOpacity={0.7}>
         <Text style={styles.icon}>🗑️</Text>
@@ -108,6 +121,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconBtnDisabled: {
+    opacity: 0.35,
+  },
+  iconDisabled: {
+    opacity: 0.5,
   },
   iconBtnActive: {
     backgroundColor: '#FFE0E0',

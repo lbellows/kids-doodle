@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  checks:
+    name: Types and metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Verify android/ matches app.json and the changelog exists
+        run: npm run prebuild:check
+
+  android:
+    name: Release APK builds
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: npm ci
+
+      # No keystore is configured here on purpose: withReleaseSigning falls back
+      # to debug signing when there is none, which is exactly what F-Droid's
+      # buildserver does. This job proves the source builds; release.yml proves
+      # it signs.
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Assert the shipped permissions are exactly VIBRATE
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+
+          ACTUAL="$("$BUILD_TOOLS/aapt2" dump permissions "$APK" \
+                    | sed -n "s/^uses-permission: name='\(.*\)'$/\1/p" | sort)"
+          EXPECTED="android.permission.VIBRATE"
+
+          echo "Permissions in the release APK:"
+          echo "${ACTUAL:-  (none)}"
+
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::Unexpected permission set in the release APK."
+            echo "Expected: $EXPECTED"
+            echo "Actual:   ${ACTUAL:-(none)}"
+            echo "INTERNET here means plugins/withOfflineReleaseManifest.js did not apply."
+            exit 1
+          fi
+          echo "OK — release APK declares only VIBRATE and has no network access."
+
+      - name: Upload APK for inspection
+        uses: actions/upload-artifact@v4
+        with:
+          name: kidsdoodle-release-unsigned
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error

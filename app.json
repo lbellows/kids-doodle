@@ -21,14 +21,23 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "package": "com.kidsdoodle.app",
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro"
     },
     "plugins": [
       "expo-router",
-      "expo-navigation-bar"
+      "expo-navigation-bar",
+      "./plugins/withReleaseSigning",
+      "./plugins/withOfflineReleaseManifest",
+      "./plugins/withoutUpdatesMetadata"
     ],
     "experiments": {
       "typedRoutes": true

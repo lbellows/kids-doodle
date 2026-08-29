@@ -1,0 +1,102 @@
+name: Release APK
+
+# Builds a signed universal APK and attaches it to a GitHub Release.
+# IzzyOnDroid watches this repo's releases and picks the APK up automatically.
+#
+# The official F-Droid repo does not use this workflow — it builds from source
+# with fdroid/com.kidsdoodle.app.yml and signs with its own key.
+#
+# Required repository secrets (see docs/PACKAGING.md):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD,
+#   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify android/ matches app.json and the changelog exists
+        run: npm run prebuild:check
+
+      - name: Decode release keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set. See docs/PACKAGING.md."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+
+      - name: Build release APK
+        env:
+          KIDSDOODLE_STORE_FILE: ${{ runner.temp }}/release.keystore
+          KIDSDOODLE_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+          KIDSDOODLE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KIDSDOODLE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Confirm the APK is release-signed with the expected permissions
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)"
+
+          # A debug-signed APK would be rejected by IzzyOnDroid and is unsafe to
+          # install; it means the keystore env vars did not reach Gradle.
+          CERTS="$("$BUILD_TOOLS/apksigner" verify --print-certs "$APK")"
+          echo "$CERTS"
+          if echo "$CERTS" | grep -q "CN=Android Debug"; then
+            echo "::error::APK is signed with the debug key, not the release key."
+            exit 1
+          fi
+
+          ACTUAL="$("$BUILD_TOOLS/aapt2" dump permissions "$APK" \
+                    | sed -n "s/^uses-permission: name='\(.*\)'$/\1/p" | sort)"
+          EXPECTED="android.permission.VIBRATE"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::Unexpected permission set in the release APK."
+            echo "Expected: $EXPECTED"
+            echo "Actual:   ${ACTUAL:-(none)}"
+            exit 1
+          fi
+          echo "OK — release-signed, declares only VIBRATE."
+
+      - name: Name the APK after the release
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cp android/app/build/outputs/apk/release/app-release.apk \
+             "KidsDoodle-${VERSION}.apk"
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: KidsDoodle-*.apk
+          generate_release_notes: true

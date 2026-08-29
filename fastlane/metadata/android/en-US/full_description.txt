@@ -1,0 +1,22 @@
+KidsDoodle is a full-screen drawing app for small children, with a parent lock so they stay in it.
+
+Hand a child the tablet and they get a blank white page and a simple toolbar: eight bright colours, three brush sizes, an eraser, undo, and a clear button. Nothing else — no menus to wander into, no adverts to tap, no in-app purchases.
+
+The lock button puts a PIN pad over the screen and hides the system navigation bar, so the drawing stays up until a grown-up enters the four-digit PIN. The hardware back button is blocked while locked. The PIN is chosen on first launch and can be changed in settings after re-entering the current one.
+
+FEATURES
+
+* Full-screen freehand drawing
+* Eight colours, three brush sizes, eraser
+* Undo and clear
+* Parent PIN lock hides the nav bar and blocks the back button
+* Screen stays awake while drawing
+* Portrait, full-screen, no distractions
+
+PRIVACY
+
+KidsDoodle works entirely offline. It has no network permission at all in the released build, so it cannot phone home even in principle. There are no adverts, no analytics, no crash reporting, no third-party SDKs, and no account to create. Nothing you draw ever leaves the device.
+
+The parent PIN is stored on the device as a SHA-256 hash, never in plain text.
+
+The app is free software under the MIT licence. The complete source is linked below.
