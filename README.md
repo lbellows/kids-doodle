@@ -55,8 +55,8 @@ fdroid/com.kidsdoodle.app.yml    F-Droid build recipe
 ### Prerequisites
 
 - Node.js 18+
-- Expo Go on Android ([Play Store](https://play.google.com/store/apps/details?id=host.exp.exponent))
-- For EAS builds: an [Expo account](https://expo.dev) + `npm install -g eas-cli`
+- Expo Go on Android, or a local debug build (`npm run android`)
+- For a release build: JDK 17 + the Android SDK, or just push a tag and let CI do it
 
 ### Install
 
@@ -74,7 +74,7 @@ npx expo start
 
 Scan the QR code with Expo Go on Android.
 
-> **Note:** `expo-navigation-bar` (hiding the system nav bar while locked) only works in a native/EAS build. All other features work in Expo Go.
+> **Note:** `expo-navigation-bar` (hiding the system nav bar while locked) only works in a native build (`npm run android`). All other features work in Expo Go.
 
 ### Run on Android emulator
 
@@ -99,15 +99,17 @@ keystore setup, and the submission steps for both.
 The released APK declares a single permission, `VIBRATE`. It has no network
 access, no ads, no analytics and no third-party SDKs.
 
-## EAS Build (Android)
+## Building a release APK
+
+The app is not built with EAS or shipped to Google Play, so there is no
+`eas.json`. Release APKs are built from the committed `android/` project:
 
 ```bash
-eas login
-eas build --platform android --profile preview   # APK  (internal testing)
-eas build --platform android --profile production # AAB  (Play Store)
+cd android && ./gradlew assembleRelease      # debug-signed, like F-Droid's build
 ```
 
-The `development` profile builds a debug APK with Expo Dev Client for native-module testing.
+Pushing a `v*` tag builds and signs one in CI and attaches it to a GitHub
+Release. See [docs/PACKAGING.md](docs/PACKAGING.md).
 
 ## Features
 

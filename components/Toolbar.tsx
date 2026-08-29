@@ -79,7 +79,15 @@ export function brushSizeToPx(size: BrushSize): number {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
+    // The row is ~690px of controls; every phone is narrower than that, so
+    // without wrapping the eraser, undo and clear buttons fall off the right
+    // edge and cannot be reached. Wrapping to a second row keeps them all
+    // visible — preferable to horizontal scrolling for an app aimed at
+    // children, who will not discover a scroll affordance.
+    flexWrap: 'wrap',
     alignItems: 'center',
+    justifyContent: 'center',
+    rowGap: 8,
     backgroundColor: 'rgba(255,255,255,0.95)',
     paddingHorizontal: 12,
     paddingVertical: 10,

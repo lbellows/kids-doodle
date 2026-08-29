@@ -82,4 +82,6 @@ Native customisations live in `plugins/` as config plugins, never as hand edits 
 
 **Permissions:** the release APK declares only `VIBRATE`. `SYSTEM_ALERT_WINDOW` and the storage permissions are stripped via `android.blockedPermissions` in app.json; `INTERNET` is removed from release builds only (debug keeps it for Metro) by `plugins/withOfflineReleaseManifest.js`. Adding a permission needs a reason — this is a kids' app on F-Droid.
 
-**expo-navigation-bar** (hide nav bar while locked) only works in a native/EAS build, not Expo Go.
+**expo-navigation-bar** (hide nav bar while locked) only works in a native build, not Expo Go.
+
+**No EAS / Play Store.** There is no `eas.json`; distribution is F-Droid and IzzyOnDroid only. Release APKs come from `android/gradlew assembleRelease`, signed in CI on a `v*` tag.
