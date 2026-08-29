@@ -1,10 +1,3 @@
-# F-Droid build recipe for KidsDoodle.
-#
-# This file is not used by this repository — it is the metadata to submit to
-# https://gitlab.com/fdroid/fdroiddata as metadata/com.kidsdoodle.app.yml.
-# It is kept here so the recipe is versioned alongside the code it builds.
-# See docs/PACKAGING.md for the submission procedure.
-
 Categories:
   - Draw
   - Graphics
@@ -20,55 +13,34 @@ RepoType: git
 Repo: https://github.com/lbellows/kids-doodle.git
 
 Builds:
-  # One build per architecture. The Gradle build splits the APK by ABI, and
-  # `reactNativeArchitectures` narrows each run to a single one so every build
-  # here produces exactly one APK. Each APK's versionCode is
-  # `expo.android.versionCode * 10 + <abi offset>` (armeabi-v7a 1, arm64-v8a 2,
-  # x86_64 3), assigned in plugins/withAbiSplits.js.
   - versionName: 1.0.3
     versionCode: 41
     commit: v1.0.3
     subdir: android/app
-    gradleprops:
-      - reactNativeArchitectures=armeabi-v7a
     sudo:
-      # Node.js official binaries are a permitted prebuilt source.
-      - curl -Lo node.tar.xz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
-      - echo "d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307  node.tar.xz" | sha256sum -c -
-      - tar xf node.tar.xz --directory=/opt
+      - curl -Lo node.tar.gz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.gz
+      - echo "b294a556e639d64338823920e5866c21c02741742d2e1529ee1a225c1ec9252a  node.tar.gz"
+        | sha256sum -c -
+      - tar xzf node.tar.gz --directory=/opt
+      - rm -rf /opt/node
       - mv /opt/node-v22.23.2-linux-x64 /opt/node
-      - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+      - ln -sf /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+      - curl -Lo jdk17.tar.gz 
+        https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz
+      - echo "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e  jdk17.tar.gz"
+        | sha256sum -c -
+      - mkdir -p /usr/lib/jvm
+      - tar xzf jdk17.tar.gz --directory=/usr/lib/jvm
     init:
-      # fdroidserver joins these with "; " into a single bash invocation whose
-      # working directory is `subdir` above, not the repository root. So cd up
-      # once, here, and the rest run from the root. Keep the number of levels in
-      # step with `subdir`.
       - cd ../..
       - npm ci
-      # Deletes every prebuilt binary in node_modules that this build does not
-      # use, so the Gradle build has to succeed without them. See the notes below.
       - ./scripts/purge-nonfree-blobs.sh
     gradle:
       - yes
     rm:
       - .github
     scanignore:
-      # Everything the scanner would otherwise flag is deleted by
-      # scripts/purge-nonfree-blobs.sh in the init step above. These are the
-      # exceptions, and each is here for a stated reason rather than to quiet
-      # the scanner:
-      #
-      # The Linux Hermes compiler. The Gradle build runs it to compile the
-      # JavaScript bundle to bytecode, and Hermes is on F-Droid's list of
-      # permitted prebuilts. Its Windows and macOS counterparts are deleted —
-      # the Windows one also carries Microsoft's msvcp140.dll.
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
-      #
-      # Six dependency .gradle files that declare a maven repository by local
-      # path — "$rootDir/../node_modules/react-native/android", mavenLocal(),
-      # and similar. The scanner reads them as unknown remote repositories. They
-      # resolve to directories inside this checkout, so nothing is fetched from
-      # an unvetted host.
       - node_modules/react-native/ReactAndroid/publish.gradle
       - node_modules/react-native-screens/android/build.gradle
       - node_modules/react-native-safe-area-context/android/build.gradle
@@ -76,51 +48,38 @@ Builds:
       - node_modules/@react-native-async-storage/async-storage/android/build.gradle
       - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
     ndk: r27b
+    gradleprops:
+      - reactNativeArchitectures=armeabi-v7a
+      - org.gradle.java.installations.paths=/usr/lib/jvm/jdk-17.0.20.1+1
 
   - versionName: 1.0.3
     versionCode: 42
     commit: v1.0.3
     subdir: android/app
-    gradleprops:
-      - reactNativeArchitectures=arm64-v8a
     sudo:
-      # Node.js official binaries are a permitted prebuilt source.
-      - curl -Lo node.tar.xz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
-      - echo "d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307  node.tar.xz" | sha256sum -c -
-      - tar xf node.tar.xz --directory=/opt
+      - curl -Lo node.tar.gz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.gz
+      - echo "b294a556e639d64338823920e5866c21c02741742d2e1529ee1a225c1ec9252a  node.tar.gz"
+        | sha256sum -c -
+      - tar xzf node.tar.gz --directory=/opt
+      - rm -rf /opt/node
       - mv /opt/node-v22.23.2-linux-x64 /opt/node
-      - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+      - ln -sf /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+      - curl -Lo jdk17.tar.gz 
+        https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz
+      - echo "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e  jdk17.tar.gz"
+        | sha256sum -c -
+      - mkdir -p /usr/lib/jvm
+      - tar xzf jdk17.tar.gz --directory=/usr/lib/jvm
     init:
-      # fdroidserver joins these with "; " into a single bash invocation whose
-      # working directory is `subdir` above, not the repository root. So cd up
-      # once, here, and the rest run from the root. Keep the number of levels in
-      # step with `subdir`.
       - cd ../..
       - npm ci
-      # Deletes every prebuilt binary in node_modules that this build does not
-      # use, so the Gradle build has to succeed without them. See the notes below.
       - ./scripts/purge-nonfree-blobs.sh
     gradle:
       - yes
     rm:
       - .github
     scanignore:
-      # Everything the scanner would otherwise flag is deleted by
-      # scripts/purge-nonfree-blobs.sh in the init step above. These are the
-      # exceptions, and each is here for a stated reason rather than to quiet
-      # the scanner:
-      #
-      # The Linux Hermes compiler. The Gradle build runs it to compile the
-      # JavaScript bundle to bytecode, and Hermes is on F-Droid's list of
-      # permitted prebuilts. Its Windows and macOS counterparts are deleted —
-      # the Windows one also carries Microsoft's msvcp140.dll.
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
-      #
-      # Six dependency .gradle files that declare a maven repository by local
-      # path — "$rootDir/../node_modules/react-native/android", mavenLocal(),
-      # and similar. The scanner reads them as unknown remote repositories. They
-      # resolve to directories inside this checkout, so nothing is fetched from
-      # an unvetted host.
       - node_modules/react-native/ReactAndroid/publish.gradle
       - node_modules/react-native-screens/android/build.gradle
       - node_modules/react-native-safe-area-context/android/build.gradle
@@ -128,51 +87,38 @@ Builds:
       - node_modules/@react-native-async-storage/async-storage/android/build.gradle
       - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
     ndk: r27b
+    gradleprops:
+      - reactNativeArchitectures=arm64-v8a
+      - org.gradle.java.installations.paths=/usr/lib/jvm/jdk-17.0.20.1+1
 
   - versionName: 1.0.3
     versionCode: 43
     commit: v1.0.3
     subdir: android/app
-    gradleprops:
-      - reactNativeArchitectures=x86_64
     sudo:
-      # Node.js official binaries are a permitted prebuilt source.
-      - curl -Lo node.tar.xz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
-      - echo "d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307  node.tar.xz" | sha256sum -c -
-      - tar xf node.tar.xz --directory=/opt
+      - curl -Lo node.tar.gz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.gz
+      - echo "b294a556e639d64338823920e5866c21c02741742d2e1529ee1a225c1ec9252a  node.tar.gz"
+        | sha256sum -c -
+      - tar xzf node.tar.gz --directory=/opt
+      - rm -rf /opt/node
       - mv /opt/node-v22.23.2-linux-x64 /opt/node
-      - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+      - ln -sf /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+      - curl -Lo jdk17.tar.gz 
+        https://github.com/adoptium/temurin17-binaries/releases/download/jdk-17.0.20.1%2B1/OpenJDK17U-jdk_x64_linux_hotspot_17.0.20.1_1.tar.gz
+      - echo "3808d1d15e3ec6bd5b84057fb5d84c33d8a1536a258146bcea2e603fc726e08e  jdk17.tar.gz"
+        | sha256sum -c -
+      - mkdir -p /usr/lib/jvm
+      - tar xzf jdk17.tar.gz --directory=/usr/lib/jvm
     init:
-      # fdroidserver joins these with "; " into a single bash invocation whose
-      # working directory is `subdir` above, not the repository root. So cd up
-      # once, here, and the rest run from the root. Keep the number of levels in
-      # step with `subdir`.
       - cd ../..
       - npm ci
-      # Deletes every prebuilt binary in node_modules that this build does not
-      # use, so the Gradle build has to succeed without them. See the notes below.
       - ./scripts/purge-nonfree-blobs.sh
     gradle:
       - yes
     rm:
       - .github
     scanignore:
-      # Everything the scanner would otherwise flag is deleted by
-      # scripts/purge-nonfree-blobs.sh in the init step above. These are the
-      # exceptions, and each is here for a stated reason rather than to quiet
-      # the scanner:
-      #
-      # The Linux Hermes compiler. The Gradle build runs it to compile the
-      # JavaScript bundle to bytecode, and Hermes is on F-Droid's list of
-      # permitted prebuilts. Its Windows and macOS counterparts are deleted —
-      # the Windows one also carries Microsoft's msvcp140.dll.
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
-      #
-      # Six dependency .gradle files that declare a maven repository by local
-      # path — "$rootDir/../node_modules/react-native/android", mavenLocal(),
-      # and similar. The scanner reads them as unknown remote repositories. They
-      # resolve to directories inside this checkout, so nothing is fetched from
-      # an unvetted host.
       - node_modules/react-native/ReactAndroid/publish.gradle
       - node_modules/react-native-screens/android/build.gradle
       - node_modules/react-native-safe-area-context/android/build.gradle
@@ -180,105 +126,67 @@ Builds:
       - node_modules/@react-native-async-storage/async-storage/android/build.gradle
       - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
     ndk: r27b
+    gradleprops:
+      - reactNativeArchitectures=x86_64
+      - org.gradle.java.installations.paths=/usr/lib/jvm/jdk-17.0.20.1+1
 
 MaintainerNotes: |-
-  Expo (React Native) app. The native android/ project is committed to the
-  repository and regenerated with `npx expo prebuild`; CI fails the build if it
-  drifts from app.json, so the checked-in project always matches the config.
+  Expo (React Native) app. The native android/ project is committed and
+  regenerated with `npx expo prebuild`; CI fails the build if it drifts from
+  app.json.
 
-  android/gradle.properties already sets -Xmx4g -XX:MaxMetaspaceSize=1g. The
-  Expo template's 512m metaspace is not enough once buildFromSource makes the
-  Kotlin compiler build every Expo module from source in one daemon, so no
-  memory tuning is needed in this recipe.
+  android/gradle.properties already sets -Xmx4g -XX:MaxMetaspaceSize=1g, so
+  this recipe does not need extra memory flags.
 
-  Every release has three builds, one per ABI. A universal APK was 94 MB, of
-  which 72 MB was four architectures' native libraries and only one is ever
-  used on a device. VercodeOperation reproduces the versionCode scheme, so the
-  auto-updater copies all three entries on a new tag and gives each the right
-  code — the build blocks are ordered to match the operations, ascending.
+  Every release has three builds, one per ABI. VercodeOperation reproduces the
+  versionCode scheme (`expo.android.versionCode * 10 + 1/2/3`), so the
+  auto-updater copies all three entries on a new tag. Keep the build blocks in
+  ascending-offset order.
 
-  Release builds also run R8 (android.enableMinifyInReleaseBuilds=true) and
-  store the native libraries compressed (expo.useLegacyPackaging=true). The keep
-  rules live in android/app/proguard-rules.pro; upstream CI installs the
-  minified APK on an emulator and fails the release if the app does not render.
+  Release builds run R8 and store native libraries compressed. Keep rules are
+  in android/app/proguard-rules.pro; upstream CI installs the minified APK on
+  an emulator and fails the release if the app does not render.
 
-  `gradle assembleRelease` produces a debug-signed APK here: the release signing
-  config activates only when a keystore is supplied via environment variables,
-  which the upstream GitHub Actions release build does and this build does not.
-  Only the standard public Android debug key is committed to the repository.
+  `gradle assembleRelease` produces a debug-signed APK here: the release
+  signing config activates only when a keystore is supplied via environment
+  variables. Only the public Android debug key is committed.
 
-  No prebuilt binaries are downloaded at install time. The dependency tree has
-  zero preinstall/install/postinstall scripts, so `npm ci` only unpacks registry
-  tarballs. @shopify/react-native-skia was deliberately dropped in favour of
-  react-native-svg (MIT, pure Java) precisely because its postinstall fetched
-  prebuilt Skia static libraries from GitHub Releases. Please do not accept a
-  future version that reintroduces it.
+  Node is the official linux-x64 .tar.gz (the buildserver has no xz). The three
+  ABI sudo blocks share a VM, so the install is idempotent (`rm -rf /opt/node`
+  then `ln -sf`). Temurin 17 is pinned the same way: the image's default JDK
+  is 21 and React Native requires 17.
 
-  `npm ci` still unpacks prebuilt binaries that npm packages carry for other
-  platforms. Wherever one is not needed, scripts/purge-nonfree-blobs.sh deletes
-  it in the init step rather than asking you to take it on trust, and the build
-  then has to succeed without it:
+  No prebuilt binaries are downloaded at install time. The tree has no
+  install scripts, so `npm ci` only unpacks registry tarballs.
+  @shopify/react-native-skia was dropped in favour of react-native-svg (MIT)
+  because its postinstall fetched prebuilt Skia libraries from GitHub
+  Releases. Please do not accept a version that reintroduces it.
 
-    * hermes-compiler's win64 and macOS compilers. The win64 directory also
-      contains Microsoft's msvcp140.dll and ICU DLLs, which are not free
-      software.
-    * every fb-dotslash binary, Linux included. dotslash launches the React
-      Native DevTools shell, which no release build touches.
-    * the iOS localisation packs under react-native/React/I18n. Android builds
-      from ReactAndroid; React/ is the Objective-C implementation.
-    * Expo's app-scaffolding template archive, node_modules/expo/template.tgz.
-    * Expo's precompiled .aar modules under node_modules/*/local-maven-repo.
-      These are already unused because package.json sets
-      expo.autolinking.android.buildFromSource to ".*", which makes every Expo
-      module compile from Java/Kotlin source; deleting them proves it.
-    * gradle-wrapper.jar inside dependency packages. Nothing uses them: this
-      build removes android/gradlew and its wrapper jar too, and runs the
-      buildserver's own gradle.
-    * the lightningcss native module, used only by Metro's web CSS pipeline.
+  `scripts/purge-nonfree-blobs.sh` then deletes unused prebuilts so the build
+  has to succeed without them: hermes-compiler win64/macOS (win64 also has
+  msvcp140.dll), every fb-dotslash binary, iOS packs under
+  react-native/React/I18n, expo/template.tgz, Expo local-maven-repo .aars
+  (unused because expo.autolinking.android.buildFromSource is ".*"),
+  dependency gradle-wrapper.jars, and lightningcss. What remains is the
+  scanignore list: Linux hermesc (permitted, actually run) and six .gradle
+  files that declare a maven repo by local path. `fdroid scanner` exits 0.
 
-  What is left is the scanignore list above: the Linux hermesc, which the build
-  genuinely runs and which F-Droid permits, and six dependency .gradle files
-  that declare a maven repository by local path. `fdroid scanner` reports no
-  other problems and exits 0 against the tagged source.
+  The scan logs a warning on Fontisto.ttf ("possibly code"); it is a mode-644
+  TrueType font. The Android JS bundle is identical with the deleted files
+  present; native code in the APK is compiled from source.
 
-  The scan does log one warning, "Found executable binary, possibly code", for
-  node_modules/@expo/vector-icons/.../Fonts/Fontisto.ttf. That file is an
-  ordinary TrueType font with mode 644 — `file` reports "TrueType Font data" —
-  so the heuristic is misreading it. It is a warning rather than a problem and
-  the scan still passes, which is why it is not in the scanignore list above.
+  The released APK requests no Android permission. The only uses-permission
+  is com.kidsdoodle.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION, generated
+  by AndroidX core with protectionLevel="signature". INTERNET is debug-only
+  for Metro; ACCESS_NETWORK_STATE is stripped from release by
+  plugins/withOfflineReleaseManifest.js.
 
-  The Android JS bundle is byte-for-byte identical to one built with all of the
-  deleted files present. Every architecture's native code in the APK is compiled
-  from source during the Gradle build.
+  No analytics, advertising, crash reporting, Play Services or proprietary
+  dependency. Runtime deps are MIT, Apache-2.0, BSD or ISC. expo-updates is
+  not a dependency; plugins/withoutUpdatesMetadata.js strips the template
+  meta-data. Hermes is the official prebuilt, as permitted.
 
-  The released APK requests no Android permission at all. The only
-  uses-permission entry is com.kidsdoodle.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION,
-  which AndroidX core generates, namespaced to the app's own package with
-  protectionLevel="signature"; it is app-private, grants nothing to any other
-  app, is not surfaced to users, and is required by
-  ContextCompat.registerReceiver. VIBRATE backed a buzz on a wrong PIN and was
-  dropped in 1.0.2; the shake animation that always accompanied it remains.
-  There are no network permissions: INTERNET is declared only in debug builds so
-  the device can reach the Metro dev server, and ACCESS_NETWORK_STATE is
-  contributed by React Native core's library manifest for a networking stack
-  this app never uses. A release-only manifest overlay
-  (plugins/withOfflineReleaseManifest.js) removes both, and CI fails the build
-  if the released APK's permission set is anything other than that single
-  app-private entry.
-
-  There is no analytics, advertising or crash reporting, and no Google Play
-  Services or other proprietary dependency. Every runtime dependency is MIT,
-  Apache-2.0, BSD or ISC licensed.
-
-  expo-updates is deliberately not a dependency, so there is no over-the-air
-  code delivery: the JavaScript bundle is compiled into the APK at build time
-  and cannot be replaced after installation. The manifest meta-data that the
-  Expo template emits for expo-updates is stripped by a config plugin
-  (plugins/withoutUpdatesMetadata.js) so the manifest does not imply otherwise.
-
-  Hermes is enabled and consumed as an official prebuilt, as permitted.
-
-AutoUpdateMode: Version v%v
+AutoUpdateMode: Version
 UpdateCheckMode: Tags
 VercodeOperation:
   - 10 * %c + 1

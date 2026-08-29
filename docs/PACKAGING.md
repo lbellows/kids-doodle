@@ -449,7 +449,7 @@ accepted, every tagged release is picked up automatically. Paste-ready body:
 5. Keep `fdroid/com.kidsdoodle.app.yml` in this repo in sync with what you
    submit, so the recipe is reviewable next to the code it builds.
 
-`AutoUpdateMode: Version v%v` and `UpdateCheckMode: Tags` mean F-Droid picks up
+`AutoUpdateMode: Version` and `UpdateCheckMode: Tags` mean F-Droid picks up
 later releases from new `v*` tags on its own — you only need a new merge request
 if the build recipe itself has to change.
 
