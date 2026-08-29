@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Vibration,
 } from 'react-native';
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', '⌫'];
@@ -23,7 +22,6 @@ export function PinPad({ onSuccess, onFailure, verifyPin, title = 'Enter PIN' }:
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const shake = () => {
-    Vibration.vibrate(200);
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 12, duration: 60, useNativeDriver: true }),
       Animated.timing(shakeAnim, { toValue: -12, duration: 60, useNativeDriver: true }),

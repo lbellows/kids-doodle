@@ -83,7 +83,7 @@ Native customisations live in `plugins/` as config plugins, never as hand edits 
 
 **Keep-awake:** `useKeepAwake()` in `app/index.tsx`, unconditional while the draw screen is mounted.
 
-**Permissions:** the release APK declares `VIBRATE` (the only one users see) plus AndroidX's app-private, signature-level `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`, and nothing else. `SYSTEM_ALERT_WINDOW` and the storage permissions are stripped via `android.blockedPermissions` in app.json; `INTERNET` and `ACCESS_NETWORK_STATE` are removed from release builds only (debug keeps them for Metro) by `plugins/withOfflineReleaseManifest.js`. Adding a permission needs a reason — this is a kids' app on F-Droid.
+**Permissions:** the release APK requests **no Android permission at all**. The only manifest entry left is AndroidX's app-private, signature-level `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. `VIBRATE` (dropped in 1.0.1), `SYSTEM_ALERT_WINDOW` and the storage permissions are stripped via `android.blockedPermissions` in app.json; `INTERNET` and `ACCESS_NETWORK_STATE` are removed from release builds only (debug keeps them for Metro) by `plugins/withOfflineReleaseManifest.js`. Wrong-PIN feedback is the shake animation alone — there is no haptic. Adding a permission needs a reason, and `scripts/check-release-apks.sh` will fail the build until its expected set is updated too.
 
 **expo-navigation-bar** (hide nav bar while locked) only works in a native build, not Expo Go.
 
