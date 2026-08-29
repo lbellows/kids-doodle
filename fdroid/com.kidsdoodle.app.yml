@@ -79,10 +79,12 @@ MaintainerNotes: |-
   source during the Gradle build.
 
   The released APK declares one permission, VIBRATE, used for the wrong-PIN
-  buzz. INTERNET is declared only in debug builds so the device can reach the
-  Metro dev server; a release-only manifest overlay
-  (plugins/withOfflineReleaseManifest.js) removes it, so the shipped APK has no
-  network access. There is no analytics, advertising or crash reporting, and no
+  buzz. It has no network permissions at all: INTERNET is declared only in debug
+  builds so the device can reach the Metro dev server, and ACCESS_NETWORK_STATE
+  is contributed by React Native core's library manifest for a networking stack
+  this app never uses. A release-only manifest overlay
+  (plugins/withOfflineReleaseManifest.js) removes both, and CI fails the build if
+  the released APK declares anything other than VIBRATE. There is no analytics, advertising or crash reporting, and no
   Google Play Services or other proprietary dependency. Every runtime dependency
   is MIT, Apache-2.0, BSD or ISC licensed.
 

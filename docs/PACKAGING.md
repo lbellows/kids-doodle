@@ -118,8 +118,9 @@ buzz. Everything else Expo's template pulled in is stripped:
 
 - `SYSTEM_ALERT_WINDOW`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE` via
   `android.blockedPermissions` in `app.json`.
-- `INTERNET` via `plugins/withOfflineReleaseManifest.js`, which writes a
-  release-only manifest overlay. It stays in debug builds because the device
+- `INTERNET` and `ACCESS_NETWORK_STATE` via `plugins/withOfflineReleaseManifest.js`,
+  which writes a release-only manifest overlay. `ACCESS_NETWORK_STATE` is merged
+  in from React Native core's own library manifest, not requested by this app. It stays in debug builds because the device
   needs it to reach the Metro dev server. `blockedPermissions` could not express
   this — it edits the main manifest, which both build types inherit. (`bracket-up`
   blocks `INTERNET` outright and accepts that `expo run:android` cannot reach

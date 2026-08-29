@@ -80,7 +80,7 @@ Native customisations live in `plugins/` as config plugins, never as hand edits 
 
 **Keep-awake:** `useKeepAwake()` in `app/index.tsx`, unconditional while the draw screen is mounted.
 
-**Permissions:** the release APK declares only `VIBRATE`. `SYSTEM_ALERT_WINDOW` and the storage permissions are stripped via `android.blockedPermissions` in app.json; `INTERNET` is removed from release builds only (debug keeps it for Metro) by `plugins/withOfflineReleaseManifest.js`. Adding a permission needs a reason — this is a kids' app on F-Droid.
+**Permissions:** the release APK declares only `VIBRATE`. `SYSTEM_ALERT_WINDOW` and the storage permissions are stripped via `android.blockedPermissions` in app.json; `INTERNET` and `ACCESS_NETWORK_STATE` are removed from release builds only (debug keeps them for Metro) by `plugins/withOfflineReleaseManifest.js`. Adding a permission needs a reason — this is a kids' app on F-Droid.
 
 **expo-navigation-bar** (hide nav bar while locked) only works in a native build, not Expo Go.
 
