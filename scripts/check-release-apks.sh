@@ -78,26 +78,42 @@ for APK in "${APKS[@]}"; do
     fail=1
   fi
 
+  CERT_NOTE=""
   if [ -n "$EXPECT_CERT" ]; then
     # Android identifies an app by package name + signing certificate, so an APK
     # signed with any other key is a different app to every device that already
     # has this one: users would have to uninstall and reinstall to update.
     CERTS="$("$BUILD_TOOLS/apksigner" verify --print-certs "$APK")"
-    ACTUAL_CERT="$(echo "$CERTS" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')"
-    if [ "$ACTUAL_CERT" != "$EXPECT_CERT" ]; then
+    echo "$CERTS"
+
+    # apksigner labels the signer either "Signer #1 certificate ..." or, when the
+    # signature is scoped to an SDK range, "Signer (minSdkVersion=24,
+    # maxSdkVersion=...) #1 certificate ...". Match on the part common to both:
+    # anchoring on "Signer #1" silently yielded nothing and reported every APK as
+    # wrongly signed.
+    ACTUAL_CERT="$(echo "$CERTS" \
+      | sed -n 's/.*certificate SHA-256 digest: *//p' | head -1)"
+
+    if [ -z "$ACTUAL_CERT" ]; then
+      echo "::error::${NAME}: could not read a certificate digest from apksigner."
+      echo "Its output is above; the parsing in this script needs updating."
+      fail=1
+    elif [ "$ACTUAL_CERT" != "$EXPECT_CERT" ]; then
       echo "::error::${NAME} is signed with the wrong key."
       echo "Expected certificate SHA-256: $EXPECT_CERT"
-      echo "Actual certificate SHA-256:   ${ACTUAL_CERT:-(none)}"
+      echo "Actual certificate SHA-256:   $ACTUAL_CERT"
       if echo "$CERTS" | grep -q "CN=Android Debug"; then
         echo "It is the public debug key: the ANDROID_* secrets did not reach"
         echo "Gradle. Check they are set on this repository."
       fi
       fail=1
+    else
+      CERT_NOTE=", signed with the expected key"
     fi
   fi
 
-  printf '%s: %s, %s MB, %s\n' "$NAME" "${ABIS:-no native code}" \
-    "$((SIZE / 1000000))" "${EXPECT_CERT:+signed with the expected key}"
+  printf '%s: %s, %s MB%s\n' "$NAME" "${ABIS:-no native code}" \
+    "$((SIZE / 1000000))" "$CERT_NOTE"
   echo "::endgroup::"
 done
 
