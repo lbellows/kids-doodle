@@ -13,6 +13,14 @@
 # One of them is not merely unpermitted but genuinely non-free: the Windows
 # build of hermesc ships Microsoft's msvcp140.dll and ICU DLLs.
 #
+# What this script cannot delete is listed as `scanignore` in the F-Droid recipe:
+# the Linux hermesc, which the build genuinely uses and which F-Droid permits,
+# and six dependency .gradle files whose local-path maven declarations the
+# scanner cannot tell apart from unknown remote repositories.
+#
+# Keep this in step with `fdroid scanner` — run it after changing dependencies.
+# See docs/PACKAGING.md.
+#
 # WHERE IT RUNS
 #
 # CI (.github/workflows/*.yml) and the F-Droid recipe (fdroid/com.kidsdoodle.app.yml),
@@ -50,11 +58,19 @@ purge "hermes" \
   node_modules/hermes-compiler/hermesc/win64-bin \
   node_modules/hermes-compiler/hermesc/osx-bin
 
-echo "==> Non-Linux dotslash binaries"
-purge "dotslash" \
-  node_modules/fb-dotslash/bin/windows \
-  node_modules/fb-dotslash/bin/windows-arm64 \
-  node_modules/fb-dotslash/bin/macos
+echo "==> dotslash binaries (used only by @react-native/debugger-shell)"
+# Every platform, including Linux: dotslash launches the React Native DevTools
+# shell, which no release build touches. Keeping the Linux ones only made
+# F-Droid's scanner flag them.
+while IFS= read -r dir; do
+  purge "dotslash" "$dir"
+done < <(find node_modules/fb-dotslash/bin -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+
+echo "==> iOS localisation packs in react-native/React (Android uses ReactAndroid)"
+purge "i18n" node_modules/react-native/React/I18n
+
+echo "==> Expo's app-scaffolding template archive (not used to build)"
+purge "template" node_modules/expo/template.tgz
 
 echo "==> Expo precompiled .aar modules (unused: buildFromSource is '.*')"
 while IFS= read -r dir; do
@@ -75,9 +91,12 @@ echo
 echo "Removed ${removed} item(s)."
 
 echo "==> Remaining native binaries under node_modules:"
+# .bin and .tgz are here because F-Droid's scanner flags them too, and both
+# turned up in a scanner run after the extension list above already passed.
 leftover=$(find node_modules -type f \
   \( -name '*.node' -o -name '*.so' -o -name '*.a' -o -name '*.dylib' \
-     -o -name '*.exe' -o -name '*.dll' -o -name '*.aar' \) 2>/dev/null | sort)
+     -o -name '*.exe' -o -name '*.dll' -o -name '*.aar' \
+     -o -name '*.bin' -o -name '*.tgz' \) 2>/dev/null | sort)
 if [ -z "$leftover" ]; then
   echo "    none"
 else
