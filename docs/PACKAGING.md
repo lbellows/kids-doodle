@@ -16,15 +16,19 @@ IzzyOnDroid is the fast path and a normal stepping stone to the main repo. Do bo
 
 | | |
 |---|---|
-| Tag `v1.0.0` | pushed |
-| GitHub Release with signed APK | published by `release.yml` on that tag |
-| IzzyOnDroid inclusion request | **not yet opened** |
-| fdroiddata merge request | **not yet opened** |
+| `v1.0.0` | tagged and released — **93.8 MB, too big for IzzyOnDroid** |
+| `v1.0.1` | split per ABI, minified, libraries compressed; not yet tagged |
+| IzzyOnDroid inclusion request | **not yet opened** — Codeberg |
+| fdroiddata merge request | **not yet opened** — GitLab |
 
-Both remaining steps are GitLab merge requests or issues, so both need a GitLab
-account and neither can be automated from this repository. They are one-time
+The two submissions are on different forges: fdroiddata is on GitLab, and
+IzzyOnDroid's tracker is on **Codeberg** (its old GitLab repo is archived and
+read-only). Neither can be automated from this repository. They are one-time
 and independent of each other. Run the local `fdroid build` verification before
 opening the fdroiddata one.
+
+Do not submit v1.0.0 to IzzyOnDroid: at 93.8 MB it is over three times their
+30 MB per-APK limit and would be rejected. See [APK size](#apk-size).
 
 ## Why the app no longer uses Skia
 
@@ -158,6 +162,56 @@ rather than a search for `INTERNET`, which is how `ACCESS_NETWORK_STATE` — mer
 in from React Native core's manifest, never requested by this app — was caught
 before it shipped.
 
+## APK size
+
+IzzyOnDroid will not host an APK over **30 MB**. Exceptions exist but must be
+well argued, and a children's drawing app is not the case to spend one on.
+
+v1.0.0's universal APK was 93.8 MB. Where it went:
+
+| | in the APK |
+|---|---|
+| `lib/x86_64` | 20.4 MB |
+| `lib/x86` | 20.1 MB |
+| `lib/arm64-v8a` | 19.1 MB |
+| `lib/armeabi-v7a` | 13.1 MB |
+| dex (3 files, unminified) | 8.3 MB |
+| resources, assets, everything else | 7.7 MB |
+
+Three changes bring it under the limit, and all three are needed — no single one
+is enough on its own:
+
+1. **One APK per ABI** (`plugins/withAbiSplits.js`). A device runs exactly one
+   of those four architectures. 32-bit x86 is dropped entirely: no phone ever
+   shipped it and only old emulator images use it. x86_64 is kept, because that
+   is what Android emulators and Android-capable Chromebooks run.
+2. **R8** (`plugins/withMinifiedRelease.js`). Expo's template leaves
+   `android.enableMinifyInReleaseBuilds` off, so the dex shipped unminified.
+3. **Compressed native libraries** (`plugins/withCompressedNativeLibs.js`).
+   Expo's default stores `.so` files uncompressed so they can be mapped straight
+   out of the APK — better for install size, worse for download size, and Izzy's
+   limit is on the file they host.
+
+The third one is a genuine trade: the libraries are extracted at install time,
+so the app takes more room on the device than the download suggests. Between
+that and not being listed, this is the better side.
+
+Each per-ABI APK carries its own versionCode — `versionCode * 10 + <offset>`,
+offsets `armeabi-v7a: 1`, `arm64-v8a: 2`, `x86_64: 3` — because both stores
+index APKs by versionCode and three APKs sharing one would collide. **The
+offsets are part of published versionCodes: never renumber them, only append.**
+That is also why each release needs a changelog file per ABI, which
+`npm run changelogs` generates from the one you write.
+
+R8 is the risky part. It renames classes that React Native resolves by name from
+C++ and JavaScript, and a missing keep rule produces an APK that builds cleanly
+and then fails at runtime. `release.yml` therefore installs the x86_64 APK on an
+emulator and fails unless the app renders its first screen. Keep rules live in
+`android/app/proguard-rules.pro`.
+
+`scripts/check-release-apks.sh` guards all of this on every build, so a future
+dependency cannot quietly undo it.
+
 ## One-time setup: the release keystore
 
 Only needed for the IzzyOnDroid / GitHub Releases path. F-Droid signs with its
@@ -255,22 +309,31 @@ every push.
 1. Bump both fields in `app.json` — `expo.version` and `expo.android.versionCode`.
    `versionCode` must increase by at least 1 every release; F-Droid and Android
    both refuse a non-increasing one.
-2. Regenerate and commit the native project:
+2. Write `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`, named
+   after the **versionCode**, not the version name. Then copy it to the per-ABI
+   codes, which is what the stores actually read:
    ```sh
-   npx expo prebuild --platform android
-   git add -A android app.json && git commit -m "Release 1.0.1"
+   npm run changelogs
    ```
-3. Add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`. Both
-   stores display this file, named after the **versionCode**, not the version name.
-4. Tag and push:
+3. Regenerate and commit the native project:
+   ```sh
+   npm run prebuild
+   git add -A android app.json fastlane && git commit -m "Release 1.0.1"
+   ```
+4. Optionally dry-run the release: trigger **Release APKs** from the Actions tab
+   (`workflow_dispatch`). It builds, verifies and smoke-tests without publishing
+   — publishing is gated on the ref being a tag.
+5. Tag and push:
    ```sh
    git tag -a v1.0.1 -m "KidsDoodle 1.0.1"
    git push origin master --follow-tags
    ```
-5. `release.yml` builds, signs, verifies and attaches the APK to the GitHub
-   Release. It fails if the APK's signing certificate is not the pinned one
-   (see below), or if the permission set is anything other than `VIBRATE` plus
-   AndroidX's app-private `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
+6. `release.yml` builds one APK per ABI, verifies each, installs the x86_64 one
+   on an emulator to prove the minified build still runs, and attaches all three
+   to the GitHub Release. `scripts/check-release-apks.sh` fails the build if any
+   APK is over 30 MB, contains more than one ABI, is signed with a key other
+   than the pinned certificate, or declares a permission other than `VIBRATE`
+   plus AndroidX's app-private `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
 
 ## Submitting to IzzyOnDroid
 
@@ -289,9 +352,10 @@ much traffic; drop the PNGs into
 `1_`/`2_`/`3_` prefixes, which set the display order.
 
 Then open an inclusion request at
-<https://gitlab.com/IzzyOnDroid/repo/-/issues> with the repository URL. Once
-accepted, every tagged release is picked up automatically. A GitLab account is
-needed; there is no API path that avoids it. Paste-ready body:
+<https://codeberg.org/IzzyOnDroid/repodata/issues> with the repository URL.
+IzzyOnDroid's old GitLab repo is archived and read-only; the tracker moved to
+Codeberg, so this one needs a **Codeberg** account, not a GitLab one. Once
+accepted, every tagged release is picked up automatically. Paste-ready body:
 
 > **Request for inclusion: KidsDoodle**
 >
@@ -303,7 +367,8 @@ needed; there is no API path that avoids it. Paste-ready body:
 > - Fastlane metadata: `fastlane/metadata/android/en-US/` — title, short and
 >   full description, changelog per versionCode, 512×512 icon, three 1080×2400
 >   portrait screenshots
-> - minSdk 24, targetSdk 36, universal APK
+> - minSdk 24, targetSdk 36, one APK per ABI (armeabi-v7a, arm64-v8a,
+>   x86_64), each well under the 30 MB limit
 >
 > An offline drawing app for young children with a parent PIN lock. No network
 > permissions at all — `INTERNET` and `ACCESS_NETWORK_STATE` are stripped from
@@ -343,6 +408,10 @@ if the build recipe itself has to change.
 - No proprietary dependencies. There are none: no Google Play Services, no
   Firebase, no analytics, no crash reporting.
 - No prebuilt binaries fetched during the build. See the Skia note above.
+- That there are **three build entries per release**, one per ABI, with
+  matching `VercodeOperation` lines. fdroidserver copies the last N build
+  blocks — one per operation — and assigns the sorted versionCodes in order, so
+  the blocks must stay in ascending offset order.
 - How `node_modules` is handled. The recipe carries **no `scanignore` and no
   `scandelete`**: `scripts/purge-nonfree-blobs.sh` runs in the `init` step and
   deletes every prebuilt binary the Android build does not use, so the scanner

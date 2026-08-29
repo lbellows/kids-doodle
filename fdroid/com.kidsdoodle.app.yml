@@ -19,10 +19,65 @@ RepoType: git
 Repo: https://github.com/lbellows/kids-doodle.git
 
 Builds:
-  - versionName: 1.0.0
-    versionCode: 1
-    commit: v1.0.0
+  # One build per architecture. The Gradle build splits the APK by ABI, and
+  # `reactNativeArchitectures` narrows each run to a single one so every build
+  # here produces exactly one APK. Each APK's versionCode is
+  # `expo.android.versionCode * 10 + <abi offset>` (armeabi-v7a 1, arm64-v8a 2,
+  # x86_64 3), assigned in plugins/withAbiSplits.js.
+  - versionName: 1.0.1
+    versionCode: 21
+    commit: v1.0.1
     subdir: android/app
+    gradleprops:
+      - reactNativeArchitectures=armeabi-v7a
+    sudo:
+      # Node.js official binaries are a permitted prebuilt source.
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
+      - echo "d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307  node.tar.xz" | sha256sum -c -
+      - tar xf node.tar.xz --directory=/opt
+      - mv /opt/node-v22.23.2-linux-x64 /opt/node
+      - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+    init:
+      - npm ci
+      # Deletes every prebuilt binary in node_modules that this build does not
+      # use, so the Gradle build has to succeed without them. See the notes below.
+      - ./scripts/purge-nonfree-blobs.sh
+    gradle:
+      - yes
+    rm:
+      - .github
+    ndk: r27b
+
+  - versionName: 1.0.1
+    versionCode: 22
+    commit: v1.0.1
+    subdir: android/app
+    gradleprops:
+      - reactNativeArchitectures=arm64-v8a
+    sudo:
+      # Node.js official binaries are a permitted prebuilt source.
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
+      - echo "d60acfe00a2932254bb0ad20e01b0d74397a0875595de719654b214f4b03f307  node.tar.xz" | sha256sum -c -
+      - tar xf node.tar.xz --directory=/opt
+      - mv /opt/node-v22.23.2-linux-x64 /opt/node
+      - ln -s /opt/node/bin/node /opt/node/bin/npm /opt/node/bin/npx /usr/local/bin/
+    init:
+      - npm ci
+      # Deletes every prebuilt binary in node_modules that this build does not
+      # use, so the Gradle build has to succeed without them. See the notes below.
+      - ./scripts/purge-nonfree-blobs.sh
+    gradle:
+      - yes
+    rm:
+      - .github
+    ndk: r27b
+
+  - versionName: 1.0.1
+    versionCode: 23
+    commit: v1.0.1
+    subdir: android/app
+    gradleprops:
+      - reactNativeArchitectures=x86_64
     sudo:
       # Node.js official binaries are a permitted prebuilt source.
       - curl -Lo node.tar.xz https://nodejs.org/dist/v22.23.2/node-v22.23.2-linux-x64.tar.xz
@@ -42,14 +97,30 @@ Builds:
     ndk: r27b
 
 MaintainerNotes: |-
+  Expo (React Native) app. The native android/ project is committed to the
+  repository and regenerated with `npx expo prebuild`; CI fails the build if it
+  drifts from app.json, so the checked-in project always matches the config.
+
   android/gradle.properties already sets -Xmx4g -XX:MaxMetaspaceSize=1g. The
   Expo template's 512m metaspace is not enough once buildFromSource makes the
   Kotlin compiler build every Expo module from source in one daemon, so no
   memory tuning is needed in this recipe.
 
-  Expo (React Native) app. The native android/ project is committed to the
-  repository and regenerated with `npx expo prebuild`; CI fails the build if it
-  drifts from app.json, so the checked-in project always matches the config.
+  Every release has three builds, one per ABI. A universal APK was 94 MB, of
+  which 72 MB was four architectures' native libraries and only one is ever
+  used on a device. VercodeOperation reproduces the versionCode scheme, so the
+  auto-updater copies all three entries on a new tag and gives each the right
+  code — the build blocks are ordered to match the operations, ascending.
+
+  Release builds also run R8 (android.enableMinifyInReleaseBuilds=true) and
+  store the native libraries compressed (expo.useLegacyPackaging=true). The keep
+  rules live in android/app/proguard-rules.pro; upstream CI installs the
+  minified APK on an emulator and fails the release if the app does not render.
+
+  `gradle assembleRelease` produces a debug-signed APK here: the release signing
+  config activates only when a keystore is supplied via environment variables,
+  which the upstream GitHub Actions release build does and this build does not.
+  Only the standard public Android debug key is committed to the repository.
 
   No prebuilt binaries are downloaded at install time. The dependency tree has
   zero preinstall/install/postinstall scripts, so `npm ci` only unpacks registry
@@ -84,12 +155,12 @@ MaintainerNotes: |-
   core generates, namespaced to the app's own package with
   protectionLevel="signature"; it is app-private, grants nothing to any other
   app, and is required by ContextCompat.registerReceiver. It has no network
-  permissions at all: INTERNET is declared only in debug
-  builds so the device can reach the Metro dev server, and ACCESS_NETWORK_STATE
-  is contributed by React Native core's library manifest for a networking stack
-  this app never uses. A release-only manifest overlay
-  (plugins/withOfflineReleaseManifest.js) removes both, and CI fails the build if
-  the released APK's permission set is anything other than exactly those two.
+  permissions at all: INTERNET is declared only in debug builds so the device
+  can reach the Metro dev server, and ACCESS_NETWORK_STATE is contributed by
+  React Native core's library manifest for a networking stack this app never
+  uses. A release-only manifest overlay (plugins/withOfflineReleaseManifest.js)
+  removes both, and CI fails the build if the released APK's permission set is
+  anything other than exactly those two.
 
   There is no analytics, advertising or crash reporting, and no Google Play
   Services or other proprietary dependency. Every runtime dependency is MIT,
@@ -105,5 +176,9 @@ MaintainerNotes: |-
 
 AutoUpdateMode: Version v%v
 UpdateCheckMode: Tags
-CurrentVersion: 1.0.0
-CurrentVersionCode: 1
+VercodeOperation:
+  - 10 * %c + 1
+  - 10 * %c + 2
+  - 10 * %c + 3
+CurrentVersion: 1.0.1
+CurrentVersionCode: 23
