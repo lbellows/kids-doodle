@@ -24,9 +24,9 @@ Builds:
   # here produces exactly one APK. Each APK's versionCode is
   # `expo.android.versionCode * 10 + <abi offset>` (armeabi-v7a 1, arm64-v8a 2,
   # x86_64 3), assigned in plugins/withAbiSplits.js.
-  - versionName: 1.0.1
-    versionCode: 21
-    commit: v1.0.1
+  - versionName: 1.0.2
+    versionCode: 31
+    commit: v1.0.2
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=armeabi-v7a
@@ -48,9 +48,9 @@ Builds:
       - .github
     ndk: r27b
 
-  - versionName: 1.0.1
-    versionCode: 22
-    commit: v1.0.1
+  - versionName: 1.0.2
+    versionCode: 32
+    commit: v1.0.2
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=arm64-v8a
@@ -72,9 +72,9 @@ Builds:
       - .github
     ndk: r27b
 
-  - versionName: 1.0.1
-    versionCode: 23
-    commit: v1.0.1
+  - versionName: 1.0.2
+    versionCode: 33
+    commit: v1.0.2
     subdir: android/app
     gradleprops:
       - reactNativeArchitectures=x86_64
@@ -155,7 +155,7 @@ MaintainerNotes: |-
   protectionLevel="signature"; it is app-private, grants nothing to any other
   app, is not surfaced to users, and is required by
   ContextCompat.registerReceiver. VIBRATE backed a buzz on a wrong PIN and was
-  dropped in 1.0.1; the shake animation that always accompanied it remains.
+  dropped in 1.0.2; the shake animation that always accompanied it remains.
   There are no network permissions: INTERNET is declared only in debug builds so
   the device can reach the Metro dev server, and ACCESS_NETWORK_STATE is
   contributed by React Native core's library manifest for a networking stack
@@ -182,5 +182,5 @@ VercodeOperation:
   - 10 * %c + 1
   - 10 * %c + 2
   - 10 * %c + 3
-CurrentVersion: 1.0.1
-CurrentVersionCode: 23
+CurrentVersion: 1.0.2
+CurrentVersionCode: 33

@@ -17,7 +17,7 @@ IzzyOnDroid is the fast path and a normal stepping stone to the main repo. Do bo
 | | |
 |---|---|
 | `v1.0.0` | tagged and released — **93.8 MB, too big for IzzyOnDroid** |
-| `v1.0.1` | split per ABI, minified, libraries compressed; not yet tagged |
+| `v1.0.2` | split per ABI, minified, libraries compressed, no permissions — 17–18 MB |
 | IzzyOnDroid inclusion request | **not yet opened** — Codeberg |
 | fdroiddata merge request | **not yet opened** — GitLab |
 
@@ -27,8 +27,10 @@ read-only). Neither can be automated from this repository. They are one-time
 and independent of each other. Run the local `fdroid build` verification before
 opening the fdroiddata one.
 
-Do not submit v1.0.0 to IzzyOnDroid: at 93.8 MB it is over three times their
-30 MB per-APK limit and would be rejected. See [APK size](#apk-size).
+Submit v1.0.2, not v1.0.0: at 93.8 MB the first release is over three times
+IzzyOnDroid's 30 MB per-APK limit and would be rejected on sight. See
+[APK size](#apk-size). 1.0.1 was never published — it existed only as a version
+string while this work was in flight.
 
 ## Why the app no longer uses Skia
 
@@ -152,7 +154,7 @@ stripped:
   outright and accepts that `expo run:android` cannot reach Metro; the overlay
   keeps that working here.)
 
-`VIBRATE` was dropped in 1.0.1. It backed a 200 ms buzz on a wrong PIN, in
+`VIBRATE` was dropped in 1.0.2. It backed a 200 ms buzz on a wrong PIN, in
 `PinPad`, `pin-setup` and `settings`. Every one of those already ran a shake
 animation alongside it, so the wrong-PIN feedback survives — what went is the
 haptic half, and with it the last entry a store listing would show a parent.

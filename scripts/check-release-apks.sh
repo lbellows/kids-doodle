@@ -86,11 +86,12 @@ for APK in "${APKS[@]}"; do
     CERTS="$("$BUILD_TOOLS/apksigner" verify --print-certs "$APK")"
     echo "$CERTS"
 
-    # apksigner labels the signer either "Signer #1 certificate ..." or, when the
-    # signature is scoped to an SDK range, "Signer (minSdkVersion=24,
-    # maxSdkVersion=...) #1 certificate ...". Match on the part common to both:
-    # anchoring on "Signer #1" silently yielded nothing and reported every APK as
-    # wrongly signed.
+    # apksigner labels the signer by signature scheme and SDK range, not by
+    # index: these APKs print "V2 Signer: certificate SHA-256 digest: ...", and
+    # other combinations print "Signer #1 ..." or "Signer (minSdkVersion=24,
+    # maxSdkVersion=...) #1 ...". Match only the part common to all of them —
+    # anchoring on "Signer #1" yielded nothing and reported every correctly
+    # signed APK as wrongly signed.
     ACTUAL_CERT="$(echo "$CERTS" \
       | sed -n 's/.*certificate SHA-256 digest: *//p' | head -1)"
 
