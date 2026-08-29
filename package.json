@@ -1,6 +1,6 @@
 {
   "name": "kids-doodle",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "prebuild": "expo prebuild --platform android --no-install --clean",
     "prebuild:check": "./scripts/check-release-metadata.sh",
-    "purge:blobs": "./scripts/purge-nonfree-blobs.sh"
+    "purge:blobs": "./scripts/purge-nonfree-blobs.sh",
+    "changelogs": "./scripts/sync-changelogs.sh"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",

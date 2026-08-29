@@ -1,0 +1,6 @@
+Much smaller download. The app is now published as one APK per phone
+architecture instead of a single build carrying all four, release builds are
+minified, and the native libraries are compressed — together taking the
+download from 94 MB to well under 30 MB.
+
+No changes to how the app works.
