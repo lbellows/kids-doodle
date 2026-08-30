@@ -1,11 +1,11 @@
 /**
  * Stops AGP from writing a "Dependency metadata" APK signing block.
  *
- * F-Droid's `fdroid scanner` rejects any APK signing block other than the
- * signature itself. AGP 8+ adds one named "Dependency metadata" by default
- * (`dependenciesInfo.includeInApk`), and fdroiddata CI fails `check apk` on
- * it. The block is only a list of Maven coordinates for Play's dependency
- * reporting; the app does not use it.
+ * AGP 8+ adds a signing block named "Dependency metadata" by default
+ * (`dependenciesInfo.includeInApk`). It is a list of Maven coordinates for
+ * Google Play's dependency reporting, which this app has no use for — it is not
+ * on Play — and it is the kind of extra signing block APK scanners object to.
+ * The APK carries the signature and nothing else.
  */
 const { withAppBuildGradle } = require('expo/config-plugins');
 

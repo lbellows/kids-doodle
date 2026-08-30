@@ -178,8 +178,8 @@ android {
 }
 
 
-// Give every per-ABI APK its own versionCode. F-Droid and IzzyOnDroid index APKs
-// by versionCode, so the three APKs of one release must not share one.
+// Give every per-ABI APK its own versionCode. An F-Droid repo indexes APKs by
+// versionCode, so the three APKs of one release must not share one.
 def abiVersionCodeOffsets = ['armeabi-v7a': 1, 'arm64-v8a': 2, 'x86_64': 3]
 androidComponents {
     onVariants(selector().all()) { variant ->

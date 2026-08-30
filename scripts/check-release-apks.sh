@@ -2,8 +2,8 @@
 # Verifies the per-ABI release APKs before anything is published.
 #
 # Used by both workflows: ci.yml runs it without --expect-cert (it builds
-# without a keystore, exactly as F-Droid's buildserver does), release.yml runs
-# it with the pinned certificate.
+# without a keystore, so the APK is debug-signed), release.yml runs it with the
+# pinned certificate.
 #
 # Checks, per APK:
 #   * exactly one ABI            — a universal build would blow the size limit
@@ -22,10 +22,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# Per-APK size budget. This began as IzzyOnDroid's hard limit; that path is
-# closed (see docs/PACKAGING.md), but the number is kept as a regression guard
-# so a future dependency cannot quietly undo the ABI split, the minification or
-# the library compression that took the universal v1.0.0 APK from 94 MB to 18.
+# Self-imposed per-APK download ceiling. Nothing external enforces it: small
+# APKs are just good practice, and this number is a regression guard so a future
+# dependency cannot quietly undo the ABI split, the minification or the library
+# compression that took the universal v1.0.0 APK from 94 MB to 18.
 MAX_APK_BYTES=${MAX_APK_BYTES:-30000000}
 
 # This app requests no Android permission at all. The only entry left is

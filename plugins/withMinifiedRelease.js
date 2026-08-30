@@ -3,7 +3,7 @@
  *
  * Expo's template sets `android.enableMinifyInReleaseBuilds` to false, so
  * v1.0.0 shipped 22.4 MB of unminified dex. R8 shrinks that to a fraction, and
- * with IzzyOnDroid's 30 MB per-APK limit every megabyte is load-bearing.
+ * against a self-imposed 30 MB per-APK ceiling every megabyte is load-bearing.
  *
  * R8 is not free of risk for React Native: anything looked up reflectively from
  * C++ or by name from JavaScript has to be kept explicitly. React Native and

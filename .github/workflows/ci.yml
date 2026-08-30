@@ -50,9 +50,8 @@ jobs:
         run: npm run purge:blobs
 
       # No keystore is configured here on purpose: withReleaseSigning falls back
-      # to debug signing when there is none, which is exactly what F-Droid's
-      # buildserver does. This job proves the source builds; release.yml proves
-      # it signs.
+      # to debug signing when there is none, so this job needs no secrets. It
+      # proves the source builds; release.yml proves it signs.
       - name: Build release APKs
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon

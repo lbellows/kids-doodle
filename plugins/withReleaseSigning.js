@@ -1,10 +1,13 @@
 /**
  * Adds an opt-in `release` signing config to the generated Android project.
  *
- * F-Droid builds this app from source and signs the result with its own key, so
- * the release build must still succeed with no keystore present. This plugin
- * therefore wires signing to a keystore only when one is actually configured,
- * and otherwise leaves the upstream debug-signing fallback in place.
+ * The release build must still succeed with no keystore present — CI builds the
+ * source on every push without secrets, and no release key belongs in this
+ * repository. This plugin therefore wires signing to a keystore only when one is
+ * actually configured, and otherwise leaves the upstream debug-signing fallback
+ * in place. An APK built without the key is debug-signed and unpublishable,
+ * which is the honest outcome; what must never happen is a published APK
+ * carrying the public debug key as though it were a real signature.
  *
  * A keystore is configured either by `android/keystore.properties`:
  *

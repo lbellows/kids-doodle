@@ -28,15 +28,16 @@ plugins/
   withMinifiedRelease.js         R8 on release builds, plus keep rules
   withCompressedNativeLibs.js    compress .so in the APK (download size)
 android/            committed, NOT gitignored — regenerate + commit after app.json changes
-fastlane/metadata/  store listing for F-Droid (main repo + self-hosted)
-fdroid/             F-Droid build recipe
+fastlane/metadata/  store listing, read by `fdroid update` for the self-hosted repo
+fdroid/             app-level metadata for the self-hosted repo index (not a build recipe)
 ```
 
 ## Critical: no dependency may ship or download prebuilt binaries
 
-The app is distributed through F-Droid, which compiles everything from source and
-only accepts prebuilt binaries from a fixed list (Debian main, trusted Maven repos,
-the Android/Flutter SDKs, Hermes, PyPI, Nix, Rust, Go, Node.js).
+This repo keeps a no-prebuilt-binaries rule: everything compiles from source,
+and the only prebuilt binaries tolerated are the ones a source-building
+distribution would permit (Debian main, trusted Maven repos, the Android SDK,
+Hermes, PyPI, Nix, Rust, Go, Node.js).
 
 `@shopify/react-native-skia` was removed for exactly this reason — its postinstall
 downloads prebuilt Skia static libraries from GitHub Releases. `react-native-svg`
@@ -87,14 +88,10 @@ Native customisations live in `plugins/` as config plugins, never as hand edits 
 
 **expo-navigation-bar** (hide nav bar while locked) only works in a native build, not Expo Go.
 
-**APK size:** every APK stays under 30 MB — originally IzzyOnDroid's hard limit, now a self-imposed download budget enforced by CI. v1.0.0's universal APK was 93.8 MB, so releases are **one APK per ABI** (`armeabi-v7a`, `arm64-v8a`, `x86_64`; 32-bit x86 dropped), with R8 on and native libraries stored compressed. All three are needed to get under the limit. Each APK's versionCode is `versionCode * 10 + offset` (1/2/3 in that ABI order) — **never renumber those offsets**, and run `npm run changelogs` so every per-ABI versionCode has its changelog. `scripts/check-release-apks.sh` fails the build if an APK exceeds 30 MB, carries more than one ABI, is signed with the wrong key, or gains a permission. See `docs/PACKAGING.md`.
+**APK size:** every APK stays under 30 MB — a self-imposed ceiling enforced by CI; nothing external requires it, small downloads are just good practice. v1.0.0's universal APK was 93.8 MB, so releases are **one APK per ABI** (`armeabi-v7a`, `arm64-v8a`, `x86_64`; 32-bit x86 dropped), with R8 on and native libraries stored compressed. All three are needed to get under the limit. Each APK's versionCode is `versionCode * 10 + offset` (1/2/3 in that ABI order) — **never renumber those offsets**, and run `npm run changelogs` so every per-ABI versionCode has its changelog. `scripts/check-release-apks.sh` fails the build if an APK exceeds 30 MB, carries more than one ABI, is signed with the wrong key, or gains a permission. See `docs/PACKAGING.md`.
 
 **R8 is the risky part:** it renames classes React Native resolves by name, so a missing keep rule builds cleanly and fails at runtime. `release.yml` installs the x86_64 APK on an emulator and asserts the first screen renders. Keep rules live in `android/app/proguard-rules.pro`.
 
-**No EAS / Play Store.** There is no `eas.json`; distribution is F-Droid only — the main repo (fdroiddata merge request, on **GitLab**) plus a self-hosted F-Droid repo shared with the sibling `bracket-up` app. Release APKs come from `android/gradlew assembleRelease`, signed in CI on a `v*` tag.
+**No EAS / Play Store.** There is no `eas.json`. Distribution is GitHub Releases plus a self-hosted F-Droid repo ([`lbellows/fdroid`](https://github.com/lbellows/fdroid), shared with the sibling `bracket-up` app) that indexes the same APKs; Obtainium works off the Releases page unaided. Release APKs come from `android/gradlew assembleRelease`, signed in CI on a `v*` tag.
 
-**IzzyOnDroid rejected this app — the path is closed.** Their [inclusion policy](https://izzyondroid.org/docs/general/AppInclusionPolicy/) rejects apps "fully or in part created by generative AI tools"; LLM-written docs are fine, LLM-written code is not. KidsDoodle and the sibling BracketUp were both rejected under it. That is about how the source was authored, so no recipe, metadata or size change addresses it and there is nothing to appeal. F-Droid's inclusion policy has no such clause. **Don't re-add an Izzy submission path or suggest resubmitting.** `fastlane/metadata/` stays — F-Droid reads the same directory.
-
-**F-Droid recipe:** `fdroid/com.kidsdoodle.app.yml` carries no YAML comments — `fdroid rewritemeta` strips them, so rationale goes in `MaintainerNotes`. **Do not unwrap the wrapped `curl -Lo jdk17.tar.gz` lines to satisfy a local `rewritemeta`.** Its line folding comes from `ruamel.yaml`, which fdroidserver does not pin: 0.17.21 (PyPI 2.4.5) unwraps, 0.19.1 (what CI matches) wraps. The wrapped form is what fdroiddata's pipeline accepted. Verify with `fdroid lint -f` before submitting, and build it the way fdroiddata does with the `F-Droid recipe build` workflow (`.github/workflows/fdroid-build.yml`) — which must run fdroidserver from the image's `/home/vagrant/fdroidserver` checkout, not the Debian package, or its older scanner invents errors CI does not have. The buildserver has no `xz` and ships only JDK 21, so the recipe fetches a `.tar.gz` node and a pinned Temurin 17.
-
-**Submitted:** fdroiddata MR [47210](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/47210), awaiting human review; its `fdroid build` job passed. Keep `fdroid/com.kidsdoodle.app.yml` byte-identical to what the MR carries.
+**`fdroid/com.kidsdoodle.app.yml` is app metadata, not a build recipe, and is load-bearing** — trimmed to licence, categories, author, source/issue/changelog links and current version. `lbellows/fdroid` clones this repo on each publish and derives the index's `metadata/com.kidsdoodle.app.yml` from it; without it the app lists as licence "Unknown" with no source link. Its path is named in that repo's `apps.json`, so **don't rename or delete it** without changing both. See `fdroid/README.md`.

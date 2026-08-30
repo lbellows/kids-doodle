@@ -6,9 +6,6 @@ name: Release APKs
 # (workflow_dispatch) does everything except publish, which is the way to check
 # a build before tagging.
 #
-# The official F-Droid repo does not use this workflow — it builds from source
-# with fdroid/com.kidsdoodle.app.yml and signs with its own key.
-#
 # Required repository secrets (see docs/PACKAGING.md):
 #   ANDROID_KEYSTORE_BASE64, ANDROID_STORE_PASSWORD,
 #   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD

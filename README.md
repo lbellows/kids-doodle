@@ -46,8 +46,8 @@ plugins/
   withOfflineReleaseManifest.js  Drops INTERNET from release builds
 
 android/                         Committed, not generated at build time
-fastlane/metadata/               Store listing for F-Droid and fdroid update
-fdroid/com.kidsdoodle.app.yml    F-Droid build recipe
+fastlane/metadata/               Store listing, read by fdroid update
+fdroid/com.kidsdoodle.app.yml    Licence/categories/links for the repo index
 ```
 
 ## Setup
@@ -92,18 +92,15 @@ The web version uses an HTML5 canvas rather than react-native-svg. Full feature 
 
 ## Distribution
 
-The app is packaged for **F-Droid** rather than Google Play, through two
-channels: the main repo via a `fdroiddata` merge request, and a self-hosted
-F-Droid repo at [`lbellows/fdroid`](https://github.com/lbellows/fdroid) built
-from the signed APKs attached to each GitHub Release, shared with the sibling
-BracketUp app. See **[docs/PACKAGING.md](docs/PACKAGING.md)** for the release
-process, the keystore setup, the repo URL and fingerprint, and the submission
-steps.
+The app is not on Google Play. Each `v*` tag builds three signed APKs, one per
+CPU architecture, and attaches them to a GitHub Release; a self-hosted F-Droid
+repo at [`lbellows/fdroid`](https://github.com/lbellows/fdroid) — shared with
+the sibling BracketUp app — indexes those same files so any F-Droid client can
+install and update from it. [Obtainium](https://obtainium.imranr.dev/) works
+against the Releases page with no setup on our side. See
+**[docs/PACKAGING.md](docs/PACKAGING.md)** for the release process, the keystore
+setup, and the repo URL and fingerprint.
 
-IzzyOnDroid rejected this app under the clause of their inclusion policy that
-rejects apps whose code was written with generative AI tools. That is a question
-about how the source was authored rather than anything packaging can address, so
-that path is closed.
 
 The released APK requests no Android permission at all. It has no network
 access, no ads, no analytics and no third-party SDKs.
@@ -155,6 +152,6 @@ Release. See [docs/PACKAGING.md](docs/PACKAGING.md).
 ## Known Issues / Notes
 
 - **Expo Go + nav bar**: `expo-navigation-bar` is a native module; the lock-screen nav-bar-hiding feature requires a native build via EAS (`preview` or `development` profile).
-- **No Skia**: the native canvas uses `react-native-svg`, not `@shopify/react-native-skia`. Skia downloads prebuilt static libraries from GitHub Releases at install time, which disqualifies the app from F-Droid. Don't reintroduce it. See [docs/PACKAGING.md](docs/PACKAGING.md).
+- **No Skia**: the native canvas uses `react-native-svg`, not `@shopify/react-native-skia`. Skia downloads prebuilt static libraries from GitHub Releases at install time, which breaks this repo's no-prebuilt-binaries rule. Don't reintroduce it. See [docs/PACKAGING.md](docs/PACKAGING.md).
 - **Metro platform resolution**: `metro.config.js` explicitly adds `'web'` to `resolver.platforms`; without this, Metro ignores `.web.tsx` files even when bundling for web.
 - **`android/` is committed**: regenerate it with `npx expo prebuild --platform android` after changing `app.json` or `plugins/`, and commit the diff. CI fails if it is out of sync.

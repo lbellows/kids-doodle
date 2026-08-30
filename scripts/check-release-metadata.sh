@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Guards the two things that silently break an F-Droid release:
+# Guards the two things that silently break a release:
 #   1. android/ drifting out of sync with app.json (the committed native project
-#      is what F-Droid's buildserver compiles, so it must match the config)
-#   2. a missing changelog for the current versionCode (F-Droid names changelog
-#      files after the versionCode, so a mismatch just yields an empty changelog)
+#      is what actually gets compiled, so it must match the config)
+#   2. a missing changelog for the current versionCode (`fdroid update` names
+#      changelog files after the versionCode, so a mismatch just yields an empty
+#      changelog in the repo listing)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 

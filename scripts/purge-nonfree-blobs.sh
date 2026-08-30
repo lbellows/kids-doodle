@@ -3,28 +3,25 @@
 #
 # WHY THIS EXISTS
 #
-# F-Droid only accepts prebuilt binaries from a fixed set of sources (Debian
-# main, trusted Maven repos, the Android/Flutter SDKs, Hermes, PyPI, Nix, Rust,
+# This repository keeps a no-prebuilt-binaries rule, borrowed from F-Droid's
+# inclusion policy: the only prebuilt binaries tolerated are the ones it permits
+# (Debian main, trusted Maven repos, the Android SDK, Hermes, PyPI, Nix, Rust,
 # Go, Node.js). `npm ci` drops a handful of binaries into node_modules that are
 # not on that list. None of them are used to build the Android APK, so rather
-# than asking a reviewer to take that on trust via `scanignore`, this script
-# deletes them and the build then has to succeed without them.
+# than taking that on trust, this script deletes them and the build then has to
+# succeed without them.
 #
 # One of them is not merely unpermitted but genuinely non-free: the Windows
 # build of hermesc ships Microsoft's msvcp140.dll and ICU DLLs.
 #
-# What this script cannot delete is listed as `scanignore` in the F-Droid recipe:
-# the Linux hermesc, which the build genuinely uses and which F-Droid permits,
-# and six dependency .gradle files whose local-path maven declarations the
-# scanner cannot tell apart from unknown remote repositories.
-#
-# Keep this in step with `fdroid scanner` — run it after changing dependencies.
-# See docs/PACKAGING.md.
+# Two things it deliberately does not delete: the Linux hermesc, which the build
+# genuinely uses and which is a permitted prebuilt, and six dependency .gradle
+# files whose local-path maven declarations look like unknown remote repos but
+# are not. Run this after changing dependencies. See docs/PACKAGING.md.
 #
 # WHERE IT RUNS
 #
-# CI (.github/workflows/*.yml) and the F-Droid recipe (fdroid/com.kidsdoodle.app.yml),
-# after `npm ci` and before Gradle. It is NOT part of normal development: it
+# CI (.github/workflows/*.yml), after `npm ci` and before Gradle. It is NOT part of normal development: it
 # removes the lightningcss binary that Metro's CSS pipeline uses when bundling
 # for web. Run `npm ci` to undo it.
 #
@@ -60,8 +57,8 @@ purge "hermes" \
 
 echo "==> dotslash binaries (used only by @react-native/debugger-shell)"
 # Every platform, including Linux: dotslash launches the React Native DevTools
-# shell, which no release build touches. Keeping the Linux ones only made
-# F-Droid's scanner flag them.
+# shell, which no release build touches. There is no reason to keep the Linux
+# ones either.
 while IFS= read -r dir; do
   purge "dotslash" "$dir"
 done < <(find node_modules/fb-dotslash/bin -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
@@ -91,8 +88,8 @@ echo
 echo "Removed ${removed} item(s)."
 
 echo "==> Remaining native binaries under node_modules:"
-# .bin and .tgz are here because F-Droid's scanner flags them too, and both
-# turned up in a scanner run after the extension list above already passed.
+# .bin and .tgz are here because both turned up as leftovers after the
+# extension list above already passed.
 leftover=$(find node_modules -type f \
   \( -name '*.node' -o -name '*.so' -o -name '*.a' -o -name '*.dylib' \
      -o -name '*.exe' -o -name '*.dll' -o -name '*.aar' \
