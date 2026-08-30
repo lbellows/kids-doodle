@@ -1,0 +1,116 @@
+# Verify fdroid/com.kidsdoodle.app.yml the way fdroiddata's CI does: run
+# `fdroid build` inside F-Droid's own buildserver image. Manual only -- this is
+# a slow, large job and nothing about a normal push needs it. ci.yml already
+# runs the same Gradle build directly, but it never reads the recipe, so it
+# cannot catch a broken `init`, `sudo` or `scanignore` block.
+#
+# The recipe provisions its own Temurin 17 (see docs/PACKAGING.md, "Submitting
+# to F-Droid"), because the image ships only JDK 21 and React Native pins the
+# toolchain to 17. So this job only has to supply the SDK and NDK that
+# fdroiddata's CI installs on top of the image.
+name: F-Droid recipe build
+
+on:
+  workflow_dispatch:
+    inputs:
+      versioncode:
+        description: Which build entry to run (41 armeabi-v7a, 42 arm64-v8a, 43 x86_64)
+        type: choice
+        options: ['42', '41', '43']
+        default: '42'
+
+jobs:
+  fdroid-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      # The buildserver image plus the SDK, NDK and a Gradle build do not fit
+      # alongside the runner's preinstalled toolchains.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
+          df -h /
+
+      - name: Run fdroid build in the buildserver image
+        env:
+          VERSIONCODE: ${{ inputs.versioncode }}
+        run: |
+          mkdir -p work && cp fdroid/com.kidsdoodle.app.yml work/
+          cat > work/build.sh <<'SCRIPT'
+          set -e
+          source /etc/profile.d/bsenv.sh
+          export PYTHONUNBUFFERED=true
+
+          # fdroidserver from git master needs a git checkout to report a
+          # version, so use the distro package.
+          apt-get update -qq
+          apt-get install -qy --no-install-recommends fdroidserver
+          fdroid --version
+
+          # fdroiddata CI refreshes gradlew-fdroid before every build. The copy
+          # bundled in the .deb lags the gradle-transparency-log, so point
+          # fdroid at the image's checkout instead.
+          git config --global --add safe.directory /home/vagrant/gradlew-fdroid
+          git -C /home/vagrant/gradlew-fdroid pull --quiet || true
+
+          # Matches android/ via react-native's gradle/libs.versions.toml:
+          # compileSdk/targetSdk 36, build-tools 36.0.0, NDK 27.1.12297006 =
+          # the recipe's `ndk: r27b`.
+          yes | sdkmanager "platform-tools" "build-tools;36.0.0" \
+                "platforms;android-36" "ndk;27.1.12297006" "cmake;3.22.1" > /tmp/sdk.log 2>&1 \
+            || { tail -20 /tmp/sdk.log; exit 1; }
+
+          mkdir -p "$home_vagrant"/{metadata,build,tmp,logs,unsigned,srclibs,.android,.gradle}
+          printf 'gradle: /usr/local/bin/gradle\n' > "$home_vagrant/config.yml"
+          chmod 0600 "$home_vagrant/config.yml"
+          cp /work/com.kidsdoodle.app.yml "$home_vagrant/metadata/"
+          chown -R vagrant "$home_vagrant" "$ANDROID_HOME"
+          cd "$home_vagrant"
+
+          asvagrant() {
+            sudo --preserve-env --user vagrant \
+              env PATH="$PATH" PYTHONUNBUFFERED=true HOME="$home_vagrant" "$@"
+          }
+
+          # `fdroid build` expects build/<appid> to exist. fdroiddata CI creates
+          # it with `fdroid fetchsrclibs`, which only exists in git master.
+          asvagrant git clone https://github.com/lbellows/kids-doodle.git \
+            "$home_vagrant/build/com.kidsdoodle.app"
+
+          set +e
+          asvagrant fdroid build --verbose --test --refresh-scanner --on-server \
+            --no-tarball "com.kidsdoodle.app:$VERSIONCODE"
+          rc=$?
+          set -e
+
+          cp -v "$home_vagrant"/tmp/*.apk /work/ 2>/dev/null || true
+          mkdir -p /work/logs && cp -v "$home_vagrant"/logs/* /work/logs/ 2>/dev/null || true
+          chmod -R a+rw /work
+
+          # Inspect here rather than on the runner: the disk-cleanup step above
+          # deletes the runner's Android SDK, and this container has one.
+          APK=$(ls /work/*.apk 2>/dev/null | head -1)
+          if [ -n "$APK" ]; then
+            echo "::: built $(basename "$APK") ($(stat -c %s "$APK") bytes)"
+            "$ANDROID_HOME"/build-tools/36.0.0/aapt2 dump badging "$APK" \
+              | grep -E '^package:|^native-code:|^uses-permission:'
+          fi
+          exit $rc
+          SCRIPT
+          docker run --rm \
+            -e VERSIONCODE \
+            -v "$PWD/work:/work" \
+            registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie \
+            bash /work/build.sh
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fdroid-build-${{ inputs.versioncode }}
+          path: |
+            work/*.apk
+            work/logs/
+          if-no-files-found: warn

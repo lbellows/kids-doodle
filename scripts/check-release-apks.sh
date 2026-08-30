@@ -8,7 +8,7 @@
 # Checks, per APK:
 #   * exactly one ABI            — a universal build would blow the size limit
 #   * the exact permission set   — a dependency must not reintroduce a permission
-#   * size under the Izzy limit  — over it, the app cannot be listed at all
+#   * size under the size budget — keeps the download small (see PACKAGING.md)
 #   * the signing certificate    — only when --expect-cert is given
 set -euo pipefail
 
@@ -22,9 +22,10 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# IzzyOnDroid's hard limit for a single APK. The universal v1.0.0 APK was 94 MB;
-# this guard is here so a future dependency cannot quietly undo the ABI split,
-# the minification or the library compression that got it under the limit.
+# Per-APK size budget. This began as IzzyOnDroid's hard limit; that path is
+# closed (see docs/PACKAGING.md), but the number is kept as a regression guard
+# so a future dependency cannot quietly undo the ABI split, the minification or
+# the library compression that took the universal v1.0.0 APK from 94 MB to 18.
 MAX_APK_BYTES=${MAX_APK_BYTES:-30000000}
 
 # This app requests no Android permission at all. The only entry left is
@@ -74,7 +75,7 @@ for APK in "${APKS[@]}"; do
 
   SIZE="$(stat -c%s "$APK")"
   if [ "$SIZE" -gt "$MAX_APK_BYTES" ]; then
-    echo "::error::${NAME} is ${SIZE} bytes, over IzzyOnDroid's ${MAX_APK_BYTES}-byte limit."
+    echo "::error::${NAME} is ${SIZE} bytes, over the ${MAX_APK_BYTES}-byte budget."
     fail=1
   fi
 

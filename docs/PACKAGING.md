@@ -1,38 +1,57 @@
-# Packaging KidsDoodle for F-Droid and IzzyOnDroid
+# Packaging KidsDoodle for F-Droid
 
 Two distribution channels, one codebase:
 
-| | Official F-Droid | IzzyOnDroid |
+| | Official F-Droid | Self-hosted repo |
 |---|---|---|
 | Who builds the APK | F-Droid, from source in their buildserver | You, in GitHub Actions |
 | Signed by | F-Droid's key | Your key |
-| Needs | `fdroid/com.kidsdoodle.app.yml` merged into `fdroiddata` | A signed APK on GitHub Releases |
-| Turnaround | Weeks (human review) | Days, then automatic per release |
-| Installable from | Any F-Droid client, default repo | Any F-Droid client, after adding the IzzyOnDroid repo |
+| Needs | `fdroid/com.kidsdoodle.app.yml` merged into `fdroiddata` | A signed APK on GitHub Releases, indexed by `fdroid update` |
+| Turnaround | Weeks (human review) | Immediate, and answerable to nobody |
+| Installable from | Any F-Droid client, default repo | Any F-Droid client, after adding the repo URL |
 
-IzzyOnDroid is the fast path and a normal stepping stone to the main repo. Do both.
+The self-hosted repo is the fast path; the main repo is the one people find
+without being told. Do both.
+
+**IzzyOnDroid rejected this app, and that is final.** Their [inclusion
+policy](https://izzyondroid.org/docs/general/AppInclusionPolicy/) states that
+they are "strongly opposed to apps which are fully or in part created by
+generative AI tools" and that "vibe-coded apps will be rejected" — readme and
+changelog text may be LLM-written, the code may not. KidsDoodle was rejected
+under that clause, as was the sibling BracketUp app.
+
+It is a judgement about how the source was authored, not about packaging, so
+**there is nothing to fix and nothing to appeal**: no metadata change, no recipe
+change, no size reduction and no resubmission addresses it. Do not spend effort
+re-opening this path. The rest of this document covers the two channels that
+remain.
+
+F-Droid's [inclusion policy](https://f-droid.org/docs/Inclusion_Policy/) has no
+equivalent provision; its criteria are FOSS licensing, no proprietary tracking
+or ads, building from source, and active maintenance. The `fastlane/metadata/`
+tree stays exactly as it is — F-Droid reads the same directory, and so does
+`fdroid update`.
 
 ## Where this stands
 
 | | |
 |---|---|
-| `v1.0.0` | tagged and released — **93.8 MB, too big for IzzyOnDroid** |
+| `v1.0.0` | tagged and released — 93.8 MB universal APK |
 | `v1.0.2` | split per ABI, minified, libraries compressed, no permissions — 17–18 MB |
 | `v1.0.3` | tagged and released — recipe fixes so F-Droid can build it at all; **this is the one to submit** |
-| IzzyOnDroid inclusion request | **not yet opened** — Codeberg |
 | fdroiddata merge request | **not yet opened** — GitLab |
+| Self-hosted repo | `lbellows/fdroid` created, KidsDoodle listed and correct; **first publish blocked** on its index-signing secret |
+| IzzyOnDroid | **rejected** under their generative-AI clause — closed, see above |
 
-The two submissions are on different forges: fdroiddata is on GitLab, and
-IzzyOnDroid's tracker is on **Codeberg** (its old GitLab repo is archived and
-read-only). Neither can be automated from this repository. They are one-time
-and independent of each other. Run the local `fdroid lint` and `fdroid scanner`
-verification before opening the fdroiddata one.
+The fdroiddata merge request is on GitLab and cannot be automated from this
+repository; it is one-time, and later releases are picked up from tags without
+another one. Before opening it, run the local
+[verification](#submitting-to-f-droid) — `fdroid rewritemeta`, `fdroid lint`,
+`fdroid scanner`, and the **F-Droid recipe build** workflow.
 
-Submit v1.0.3. At 93.8 MB v1.0.0 is over three times IzzyOnDroid's 30 MB
-per-APK limit and would be rejected on sight (see [APK size](#apk-size)), and
-v1.0.2 predates the recipe fixes, so F-Droid cannot build it — its `init` step
-ran in the wrong directory. 1.0.1 was never published — it existed only as a
-version string while this work was in flight.
+Submit v1.0.3. v1.0.2 predates the recipe fixes, so F-Droid cannot build it —
+its `init` step ran in the wrong directory. 1.0.1 was never published — it
+existed only as a version string while this work was in flight.
 
 ## Why the app no longer uses Skia
 
@@ -105,10 +124,11 @@ plugins/withOfflineReleaseManifest.js drops INTERNET from release builds
 plugins/withoutUpdatesMetadata.js     strips inert expo-updates manifest entries
 scripts/check-release-metadata.sh     guards android/ sync + changelog presence
 scripts/purge-nonfree-blobs.sh        deletes unused prebuilt binaries before Gradle
-fastlane/metadata/android/en-US/      store listing, read by both F-Droid and IzzyOnDroid
+fastlane/metadata/android/en-US/      store listing, read by F-Droid and fdroid update
 fdroid/com.kidsdoodle.app.yml         the recipe to submit to fdroiddata
 .github/workflows/ci.yml              typecheck + full release build, no secrets
-.github/workflows/release.yml         builds + signs the APK for IzzyOnDroid
+.github/workflows/release.yml         builds + signs the per-ABI APKs on a v* tag
+.github/workflows/fdroid-build.yml    runs the recipe in F-Droid's buildserver image
 ```
 
 This mirrors the layout of the sibling `bracket-up` repo, deliberately — the two
@@ -179,8 +199,11 @@ requested by this app — was caught before it shipped.
 
 ## APK size
 
-IzzyOnDroid will not host an APK over **30 MB**. Exceptions exist but must be
-well argued, and a children's drawing app is not the case to spend one on.
+Every APK is kept under **30 MB**. That started as IzzyOnDroid's hard limit,
+and with that path closed nothing external enforces it any more — but the work
+is already done, and download size is what a self-hosted repo serves and what a
+parent installing over mobile data pays for. `scripts/check-release-apks.sh`
+still fails the build above the limit. Keep it.
 
 v1.0.0's universal APK was 93.8 MB. Where it went:
 
@@ -204,16 +227,16 @@ is enough on its own:
    `android.enableMinifyInReleaseBuilds` off, so the dex shipped unminified.
 3. **Compressed native libraries** (`plugins/withCompressedNativeLibs.js`).
    Expo's default stores `.so` files uncompressed so they can be mapped straight
-   out of the APK — better for install size, worse for download size, and Izzy's
-   limit is on the file they host.
+   out of the APK — better for install size, worse for download size, and
+   download size is the one a repo serves.
 
 The third one is a genuine trade: the libraries are extracted at install time,
-so the app takes more room on the device than the download suggests. Between
-that and not being listed, this is the better side.
+so the app takes more room on the device than the download suggests. For an app
+this small in absolute terms, the smaller download is the better side.
 
 Each per-ABI APK carries its own versionCode — `versionCode * 10 + <offset>`,
-offsets `armeabi-v7a: 1`, `arm64-v8a: 2`, `x86_64: 3` — because both stores
-index APKs by versionCode and three APKs sharing one would collide. **The
+offsets `armeabi-v7a: 1`, `arm64-v8a: 2`, `x86_64: 3` — because F-Droid and
+`fdroid update` both index APKs by versionCode and three APKs sharing one would collide. **The
 offsets are part of published versionCodes: never renumber them, only append.**
 That is also why each release needs a changelog file per ABI, which
 `npm run changelogs` generates from the one you write.
@@ -229,8 +252,8 @@ dependency cannot quietly undo it.
 
 ## One-time setup: the release keystore
 
-Only needed for the IzzyOnDroid / GitHub Releases path. F-Droid signs with its
-own key, and the build falls back to debug signing when no keystore is
+Only needed for the GitHub Releases and self-hosted-repo path. F-Droid signs
+with its own key, and the build falls back to debug signing when no keystore is
 configured — which is what CI and F-Droid's buildserver both do.
 
 **This key is not recoverable and cannot be rotated.** Android identifies an app
@@ -350,48 +373,93 @@ every push.
    than the pinned certificate, or declares any permission other than AndroidX's
    app-private `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`.
 
-## Submitting to IzzyOnDroid
+## Store listing and screenshots
 
-Prerequisites — a FOSS licence (MIT, in `LICENSE`), a signed APK on GitHub
-Releases, and `fastlane/metadata/` populated — are all in place, including three
-portrait screenshots.
+`fastlane/metadata/android/en-US/` holds the title, the short and full
+description, a changelog per versionCode, a 512×512 icon and three portrait
+screenshots. F-Droid reads that directory straight out of the source tree, and
+`fdroid update` copies the same layout into a self-hosted repo's index, so one
+tree serves both channels. Nothing in it needed to change after the
+IzzyOnDroid rejection — the listing was never the problem.
 
-Those screenshots are 1080×2400 — a normal phone resolution — captured from the
+The screenshots are 1080×2400 — a normal phone resolution — captured from the
 **web** build under Chrome device emulation at 360×800 CSS pixels with a device
 pixel ratio of 3. It renders the same React Native components through
 react-native-web, so the layout and the wrapped toolbar are accurate, but emoji
 glyphs and the system font come from the desktop rather than Android. Replacing
-them with captures from a real device is still worth doing before the app gets
-much traffic; drop the PNGs into
+them with captures from a real device is still worth doing; drop the PNGs into
 `fastlane/metadata/android/en-US/images/phoneScreenshots/` and keep the
 `1_`/`2_`/`3_` prefixes, which set the display order.
 
-Then open an inclusion request at
-<https://codeberg.org/IzzyOnDroid/repodata/issues> with the repository URL.
-IzzyOnDroid's old GitLab repo is archived and read-only; the tracker moved to
-Codeberg, so this one needs a **Codeberg** account, not a GitLab one. Once
-accepted, every tagged release is picked up automatically. Paste-ready body:
+## Serving your own F-Droid repo
 
-> **Request for inclusion: KidsDoodle**
->
-> - Repository: https://github.com/lbellows/kids-doodle
-> - Releases: https://github.com/lbellows/kids-doodle/releases (signed APK
->   attached to each `v*` tag, built by GitHub Actions)
-> - Licence: MIT
-> - Package ID: `com.kidsdoodle.app`
-> - Fastlane metadata: `fastlane/metadata/android/en-US/` — title, short and
->   full description, changelog per versionCode, 512×512 icon, three 1080×2400
->   portrait screenshots
-> - minSdk 24, targetSdk 36, one APK per ABI (armeabi-v7a, arm64-v8a,
->   x86_64), each well under the 30 MB limit
->
-> An offline drawing app for young children with a parent PIN lock. No network
-> permissions at all — `INTERNET` and `ACCESS_NETWORK_STATE` are stripped from
-> release builds — no analytics, no ads, no crash reporting, no tracking, and
-> no Google Play Services or other proprietary dependency. The APK requests no
-> Android permission at all — its only `uses-permission` entry is AndroidX's
-> app-private, signature-level `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. It is
-> also submitted to F-Droid proper.
+A self-hosted F-Droid repo is an ordinary static directory. `fdroid update`
+reads a folder of APKs, writes a signed index next to them, and any F-Droid
+client given the URL installs and updates from it like any other repo. There is
+no review queue and no inclusion policy to satisfy — which is the whole point
+after the IzzyOnDroid rejection.
+
+**One repo, both apps.** KidsDoodle shares a repo with BracketUp rather than
+standing up its own: the same index carries both, and a user adds one URL
+instead of two. The repo itself lives at
+[`lbellows/fdroid`](https://github.com/lbellows/fdroid) and is maintained
+there, not here.
+
+| | |
+|---|---|
+| Repo URL users add | `https://lbellows.github.io/fdroid/repo` |
+| Landing page | <https://lbellows.github.io/fdroid/> — shows the fingerprint to verify against |
+| Index fingerprint | `FB4D09F2D0AA9CAEA884768393A13DAFDCD0AD008A957D312A4BC0F78F72F378` |
+| Hosting | GitHub Pages, deployed by that repo's `.github/workflows/publish.yml` |
+
+The full URL to hand out pins the repo to its key:
+
+```
+https://lbellows.github.io/fdroid/repo?fingerprint=FB4D09F2D0AA9CAEA884768393A13DAFDCD0AD008A957D312A4BC0F78F72F378
+```
+
+That workflow pulls every APK from every GitHub Release of each listed app and
+clones each app repo to copy `fastlane/metadata/android/<locale>/` into
+`metadata/<appid>/<locale>/`, which is the layout `fdroid update` wants. The
+index is a build product and is not committed.
+
+KidsDoodle is already listed in that repo's `apps.json` as
+`{ "repo": "lbellows/kids-doodle", "appid": "com.kidsdoodle.app" }`, and both
+halves of that are correct: `com.kidsdoodle.app` matches
+`expo.android.package`, and the metadata is at
+`fastlane/metadata/android/en-US/` with a 512×512 `images/icon.png`. **Nothing
+in this repository has to change to be published there.** What it contributes:
+
+- Three APKs per release, one per ABI, attached to the GitHub Release for the
+  `v*` tag. `fdroid update` indexes all three; each client installs the one
+  matching its own `native-code`.
+- versionCodes that cannot collide (`versionCode * 10 + 1/2/3`), which is
+  exactly the property a single index needs.
+- A changelog per per-ABI versionCode (`41.txt`, `42.txt`, `43.txt`), not just
+  the base code — `npm run changelogs` keeps them in sync, so the publishing
+  side does not have to fan them out.
+
+Two properties of the setup worth knowing:
+
+- The **index signing key is a new, dedicated key**, deliberately not any app's
+  release key, so the repo's identity does not depend on which apps it carries.
+  Only the index is signed with it — the APKs keep their own per-app release
+  signatures untouched, so a user can move between the GitHub Releases and this
+  repo without reinstalling.
+- That key is as unrecoverable as a release keystore. If it is lost, every user
+  has to remove and re-add the repo, because a re-signed index reads as a
+  different repo to the client.
+
+By default the index refreshes on that repo's schedule, so a new release shows
+up within a day. It could be made immediate by having `release.yml` here fire a
+`repository_dispatch` at `lbellows/fdroid`, but that needs a PAT with
+`contents:write` stored as a secret in this repo, and a day's latency on a
+children's drawing app does not justify another credential. Not done
+deliberately.
+
+This does **not** replace the fdroiddata submission. A self-hosted repo only
+reaches people who are told the URL; the main repo is how anyone else finds the
+app.
 
 ## Submitting to F-Droid
 
@@ -409,43 +477,83 @@ accepted, every tagged release is picked up automatically. Paste-ready body:
    pipx install fdroidserver
    ```
 
-   `fdroid lint` and `fdroid scanner` need no Android toolchain — scanner
-   clones the tagged source, runs the recipe's `init`, and inspects the result.
-   Both need a working directory laid out like fdroiddata:
+   `fdroid rewritemeta`, `fdroid lint` and `fdroid scanner` need no Android
+   toolchain — scanner clones the tagged source, runs the recipe's `init`, and
+   inspects the result. All three need a working directory laid out like
+   fdroiddata:
 
    ```sh
-   mkdir -p /tmp/fdcheck/metadata && cd /tmp/fdcheck
+   mkdir -p /tmp/fdcheck/metadata /tmp/fdcheck/config && cd /tmp/fdcheck
    cp ~/src/kids-doodle/fdroid/com.kidsdoodle.app.yml metadata/
-   curl -fsSLO https://gitlab.com/fdroid/fdroiddata/-/raw/master/config/categories.yml
-   {
-     printf 'repo_url: "https://example.com/fdroid/repo"\nrepo_name: "t"\n'
-     printf 'repo_description: "t"\nsdk_path: "/opt/android-sdk"\ncategories:\n'
-     grep -E '^[A-Za-z][^:]*:$' categories.yml | sed 's/:$//; s/^/  - "/; s/$/"/'
-   } > config.yml
+   curl -fsSL https://gitlab.com/fdroid/fdroiddata/-/raw/master/config/categories.yml \
+     | grep -v '^  icon:' > config/categories.yml
+   printf 'repo_url: https://f-droid.org/repo\n' > config.yml
 
-   fdroid lint com.kidsdoodle.app     # metadata fields; silence means clean
-   fdroid scanner com.kidsdoodle.app  # binaries and maven repos in the source
+   # 1. Canonical format: this MUST leave the file byte-identical.
+   fdroid rewritemeta com.kidsdoodle.app
+   diff -u ~/src/kids-doodle/fdroid/com.kidsdoodle.app.yml metadata/com.kidsdoodle.app.yml
+
+   fdroid lint -f com.kidsdoodle.app   # metadata fields; silence means clean
+   fdroid scanner com.kidsdoodle.app   # binaries and maven repos in the source
    ```
 
-   The `categories:` list matters — without it every category is "not valid",
-   which looks like a real finding and is not.
+   **The `rewritemeta` check is the one that fails merge requests.** fdroiddata
+   CI runs `fdroid rewritemeta` on every changed metadata file and fails the MR
+   if the file changes. The rewrite reorders keys and strips YAML comments, so
+   the committed recipe is kept as literal `rewritemeta` output and every piece
+   of rationale a reviewer needs lives in `MaintainerNotes`, which survives it.
+   This is easy to break by hand: a long `sudo:` command wrapped across two
+   lines is valid YAML but not canonical, and rewritemeta unwraps it. If the
+   `diff` prints anything, copy `metadata/com.kidsdoodle.app.yml` back over the
+   recipe rather than hand-editing it.
+
+   Two traps in the local setup, both of which look like real findings and are
+   not. Run outside a fdroiddata checkout, `fdroid lint` reports every category
+   as invalid, because it reads the valid list from that repo's
+   `config/categories.yml` — hence fetching it above. And it then crashes with
+   `FileNotFoundError: config/category_connectivity.png` unless the `icon:`
+   lines are stripped, since those name PNGs that live in fdroiddata too; lint
+   only validates the category names, so dropping the icons is enough.
 
    `fdroid scanner` reads `commit:` from the recipe, so it verifies the
    **tagged** source, not your working tree. Point `commit:` at a branch SHA to
    test changes before tagging.
 
-3. A full `fdroid build -v -l com.kidsdoodle.app` additionally needs JDK 17,
-   the Android SDK and NDK r27b on this machine — none of which are installed
-   here. Lint and scanner cover the recipe itself; GitHub Actions already
-   compiles the identical Gradle build on every push, so the remaining gap is
-   small. F-Droid's own CI builds the merge request too.
+3. Build the recipe the way fdroiddata's CI does, with the **F-Droid recipe
+   build** workflow (`.github/workflows/fdroid-build.yml`, `workflow_dispatch`
+   only). It runs `fdroid build --test --on-server` inside
+   `registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie` and uploads the
+   APK and fdroid's logs. Pick a versionCode: 41 armeabi-v7a, 42 arm64-v8a, 43
+   x86_64.
+
+   This exists because a full local `fdroid build` needs JDK 17, the Android
+   SDK and NDK r27b on this machine, none of which are installed here — and
+   because the buildserver image differs from a GitHub runner in ways that only
+   show up inside it. Two failures found that way, both now fixed in the
+   recipe and worth remembering:
+
+   - **No `xz` on the buildserver.** Only gzip; `xz-utils` is not installed.
+     Fetching Node as `.tar.xz` dies with `tar (child): xz: Cannot exec`, so
+     the recipe uses the `.tar.gz` tarball nodejs.org publishes alongside it.
+   - **Java 17.** React Native's Gradle plugin forces `jvmToolchain(17)` and
+     `sourceCompatibility`/`targetCompatibility` 17 on every module, and
+     expo-modules-core does the same for KSP. Gradle matches toolchain versions
+     exactly, the image ships only JDK 21, and Debian trixie has no openjdk-17
+     package at all — so the build dies at `:app:compileReleaseJavaWithJavac`.
+     The recipe pins a Temurin 17 in its `sudo:` block and points Gradle at it
+     with `org.gradle.java.installations.paths`. If a reviewer objects to
+     fetching a JDK, the justification is that this repo's own release workflow
+     already builds with Temurin 17, so the recipe makes the buildserver match
+     rather than diverge.
+
 4. Fork <https://gitlab.com/fdroid/fdroiddata>, add
    `metadata/com.kidsdoodle.app.yml`, and open a merge request. Title it
    `New app: KidsDoodle (com.kidsdoodle.app)`; the description only needs to
-   say it is a new app, that the recipe was verified locally with `fdroid lint`
-   and `fdroid scanner`, and to point at the `MaintainerNotes` in the recipe,
-   which already answer the Skia, prebuilt-binary and permission questions a
-   reviewer will raise.
+   say it is a new app, that the recipe is canonical `fdroid rewritemeta`
+   output and was verified locally with `fdroid lint` and `fdroid scanner` and
+   built in the buildserver image, and to point at the `MaintainerNotes` in the
+   recipe, which already answer the Skia, prebuilt-binary, JDK-17 and
+   permission questions a reviewer will raise.
 5. Keep `fdroid/com.kidsdoodle.app.yml` in this repo in sync with what you
    submit, so the recipe is reviewable next to the code it builds.
 

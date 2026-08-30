@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Guards the two things that silently break an F-Droid / IzzyOnDroid release:
+# Guards the two things that silently break an F-Droid release:
 #   1. android/ drifting out of sync with app.json (the committed native project
 #      is what F-Droid's buildserver compiles, so it must match the config)
 #   2. a missing changelog for the current versionCode (F-Droid names changelog
@@ -29,7 +29,7 @@ CHANGELOG="fastlane/metadata/android/en-US/changelogs/${VERSION_CODE}.txt"
 echo "==> Checking changelog for versionCode ${VERSION_CODE} (v${VERSION_NAME})"
 if [ ! -s "$CHANGELOG" ]; then
   echo "ERROR: ${CHANGELOG} is missing or empty."
-  echo "       F-Droid and IzzyOnDroid read release notes from that path."
+  echo "       F-Droid reads release notes from that path."
   fail=1
 else
   echo "    ${CHANGELOG} present"

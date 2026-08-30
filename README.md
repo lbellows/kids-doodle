@@ -46,7 +46,7 @@ plugins/
   withOfflineReleaseManifest.js  Drops INTERNET from release builds
 
 android/                         Committed, not generated at build time
-fastlane/metadata/               Store listing for F-Droid and IzzyOnDroid
+fastlane/metadata/               Store listing for F-Droid and fdroid update
 fdroid/com.kidsdoodle.app.yml    F-Droid build recipe
 ```
 
@@ -92,9 +92,18 @@ The web version uses an HTML5 canvas rather than react-native-svg. Full feature 
 
 ## Distribution
 
-The app is packaged for **F-Droid** and **IzzyOnDroid** rather than Google Play.
-See **[docs/PACKAGING.md](docs/PACKAGING.md)** for the release process, the
-keystore setup, and the submission steps for both.
+The app is packaged for **F-Droid** rather than Google Play, through two
+channels: the main repo via a `fdroiddata` merge request, and a self-hosted
+F-Droid repo at [`lbellows/fdroid`](https://github.com/lbellows/fdroid) built
+from the signed APKs attached to each GitHub Release, shared with the sibling
+BracketUp app. See **[docs/PACKAGING.md](docs/PACKAGING.md)** for the release
+process, the keystore setup, the repo URL and fingerprint, and the submission
+steps.
+
+IzzyOnDroid rejected this app under the clause of their inclusion policy that
+rejects apps whose code was written with generative AI tools. That is a question
+about how the source was authored rather than anything packaging can address, so
+that path is closed.
 
 The released APK requests no Android permission at all. It has no network
 access, no ads, no analytics and no third-party SDKs.

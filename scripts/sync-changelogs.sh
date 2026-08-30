@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Copies the changelog for this release to the versionCode of every per-ABI APK.
 #
-# F-Droid and IzzyOnDroid look up release notes by versionCode
+# F-Droid and `fdroid update` look up release notes by versionCode
 # (fastlane/metadata/android/en-US/changelogs/<versionCode>.txt), and since the
 # build produces one APK per architecture, each of those APKs has its own
 # versionCode — so each needs its own copy of the same text. Write the changelog

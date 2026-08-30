@@ -1,8 +1,8 @@
 name: Release APKs
 
 # Builds one signed APK per CPU architecture, proves the minified build actually
-# runs, and attaches them to a GitHub Release. IzzyOnDroid watches this repo's
-# releases and picks them up automatically. Running this by hand
+# runs, and attaches them to a GitHub Release, which is where the self-hosted
+# F-Droid repo picks them up from. Running this by hand
 # (workflow_dispatch) does everything except publish, which is the way to check
 # a build before tagging.
 #
