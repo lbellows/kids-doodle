@@ -44,10 +44,16 @@ jobs:
           source /etc/profile.d/bsenv.sh
           export PYTHONUNBUFFERED=true
 
-          # fdroidserver from git master needs a git checkout to report a
-          # version, so use the distro package.
-          apt-get update -qq
-          apt-get install -qy --no-install-recommends fdroidserver
+          # Use the fdroidserver git checkout the image already carries, NOT
+          # the distro package. fdroiddata's CI runs
+          #   PATH=/home/vagrant/fdroidserver PYTHONPATH=/home/vagrant/fdroidserver
+          # and the two disagree: the older packaged scanner rejects the
+          # build/ output that `gradle clean` creates inside node_modules,
+          # which CI's newer one ignores. Using the .deb here produced 288
+          # phantom scanner errors for a recipe that builds fine on CI.
+          export PATH="/home/vagrant/fdroidserver:$PATH"
+          export PYTHONPATH="/home/vagrant/fdroidserver:/home/vagrant/fdroidserver/examples"
+          git config --global --add safe.directory /home/vagrant/fdroidserver
           fdroid --version
 
           # fdroiddata CI refreshes gradlew-fdroid before every build. The copy
@@ -72,7 +78,8 @@ jobs:
 
           asvagrant() {
             sudo --preserve-env --user vagrant \
-              env PATH="$PATH" PYTHONUNBUFFERED=true HOME="$home_vagrant" "$@"
+              env PATH="$PATH" PYTHONPATH="$PYTHONPATH" \
+              PYTHONUNBUFFERED=true TERM=dumb HOME="$home_vagrant" "$@"
           }
 
           # `fdroid build` expects build/<appid> to exist. fdroiddata CI creates

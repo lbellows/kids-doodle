@@ -39,15 +39,20 @@ tree stays exactly as it is — F-Droid reads the same directory, and so does
 | `v1.0.0` | tagged and released — 93.8 MB universal APK |
 | `v1.0.2` | split per ABI, minified, libraries compressed, no permissions — 17–18 MB |
 | `v1.0.3` | tagged and released — recipe fixes so F-Droid can build it at all; **this is the one to submit** |
-| fdroiddata merge request | **not yet opened** — GitLab |
+| fdroiddata merge request | **open** — [MR 47210](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/47210), pipeline green, awaiting human review |
 | Self-hosted repo | `lbellows/fdroid` created, KidsDoodle listed and correct; **first publish blocked** on its index-signing secret |
 | IzzyOnDroid | **rejected** under their generative-AI clause — closed, see above |
 
-The fdroiddata merge request is on GitLab and cannot be automated from this
-repository; it is one-time, and later releases are picked up from tags without
-another one. Before opening it, run the local
-[verification](#submitting-to-f-droid) — `fdroid rewritemeta`, `fdroid lint`,
-`fdroid scanner`, and the **F-Droid recipe build** workflow.
+MR 47210 is open against fdroiddata on GitLab and waiting on a human
+reviewer. Its pipeline is green, including the `fdroid build` job, which
+compiled all three ABIs for ~36 minutes and produced signed output — so the
+recipe is confirmed buildable by F-Droid's own CI, not merely by local checks.
+
+**Keep `fdroid/com.kidsdoodle.app.yml` byte-identical to what that MR
+carries.** The two are separate copies; nothing syncs them. Changing the recipe
+here does not change the MR, and "improving" it here first is how you end up
+pushing an unnecessary change into a green review. Later releases are picked up
+from tags without another MR.
 
 Submit v1.0.3. v1.0.2 predates the recipe fixes, so F-Droid cannot build it —
 its `init` step ran in the wrong directory. 1.0.1 was never published — it
@@ -543,16 +548,20 @@ app.
    APK and fdroid's logs. Pick a versionCode: 41 armeabi-v7a, 42 arm64-v8a, 43
    x86_64.
 
-   **Do not submit without a green run here.** `fdroid lint` and `fdroid
-   scanner` do not cover this: neither invokes Gradle, and `fdroid build` runs
-   `gradle clean` before it scans, which is what produced the third failure
-   below. A recipe can be canonical, lint-clean and scanner-clean locally and
-   still fail fdroiddata's CI.
+   **It must run fdroidserver the way CI does**, from the git checkout the
+   image carries at `/home/vagrant/fdroidserver`, on both `PATH` and
+   `PYTHONPATH`. Installing the Debian `fdroidserver` package instead looks
+   equivalent and is not: its older scanner rejects the `build/` output that
+   `gradle clean` creates inside `node_modules` via React Native's and Expo's
+   `includeBuild` plugins, producing 288 errors for a recipe that CI builds
+   without complaint. That cost a `scandelete` this recipe does not need.
+   Treat a failure here as a question, not a verdict, until you have checked
+   the MR pipeline.
 
-   It also exists because a full local `fdroid build` needs JDK 17, the Android
+   It exists because a full local `fdroid build` needs JDK 17, the Android
    SDK and NDK r27b on this machine, none of which are installed here, and
    because the buildserver image differs from a GitHub runner in ways that only
-   show up inside it. Three failures were found this way, all now fixed in the
+   show up inside it. Two failures were found this way, both fixed in the
    recipe and worth remembering:
 
    - **No `xz` on the buildserver.** Only gzip; `xz-utils` is not installed.
@@ -568,10 +577,6 @@ app.
      fetching a JDK, the justification is that this repo's own release workflow
      already builds with Temurin 17, so the recipe makes the buildserver match
      rather than diverge.
-   - **288 scanner errors from Gradle's own output.** `fdroid build` cleans the
-     Gradle project before scanning, and that compiles React Native's and
-     Expo's `includeBuild` plugins into `build/` directories under
-     `node_modules`. The narrow `scandelete` above removes exactly those.
 
 4. Fork <https://gitlab.com/fdroid/fdroiddata>, add
    `metadata/com.kidsdoodle.app.yml`, and open a merge request. Title it
@@ -603,21 +608,11 @@ if the build recipe itself has to change.
   take them on trust. What survives that is a short, itemised **`scanignore`**:
   the Linux `hermesc`, which the build genuinely runs and which F-Droid permits,
   and six dependency `.gradle` files that declare a maven repository by local
-  path. There is also a narrow **`scandelete`**, covering only the `build/`
-  directories of React Native's and Expo's Gradle plugins — see below. What
-  there is deliberately *not* is `scandelete: node_modules`, which would be
-  wrong here: Expo autolinking resolves every native module from
-  `node_modules` during Gradle *configuration*, so removing the whole tree
+  path. There is deliberately no **`scandelete`** — `scandelete: node_modules`
+  would be wrong here, because Expo autolinking resolves every native module
+  from `node_modules` during Gradle *configuration*, so removing the whole tree
   breaks the build. The purge is the narrower version of that idea: delete the
   binaries, keep the sources.
-- Why `scandelete` names Gradle build output. `fdroid build` runs `gradle
-  clean` *before* it scans, and `android/settings.gradle` pulls in React
-  Native's and Expo's Gradle plugins with `includeBuild`, so that clean
-  compiles them into `build/` directories inside `node_modules`. That leaves
-  288 `.class`, `.jar` and `.bin` files for the scanner to reject, none of
-  which ship in any npm tarball and all of which the real build regenerates.
-  The `scandelete` entries name only those `build/` directories, so nothing
-  shipped is touched.
 - One scanner **warning** that is a false positive: "Found executable binary,
   possibly code" for
   `node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Fontisto.ttf`.
