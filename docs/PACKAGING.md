@@ -548,15 +548,23 @@ app.
    APK and fdroid's logs. Pick a versionCode: 41 armeabi-v7a, 42 arm64-v8a, 43
    x86_64.
 
-   **It must run fdroidserver the way CI does**, from the git checkout the
-   image carries at `/home/vagrant/fdroidserver`, on both `PATH` and
-   `PYTHONPATH`. Installing the Debian `fdroidserver` package instead looks
-   equivalent and is not: its older scanner rejects the `build/` output that
-   `gradle clean` creates inside `node_modules` via React Native's and Expo's
-   `includeBuild` plugins, producing 288 errors for a recipe that CI builds
-   without complaint. That cost a `scandelete` this recipe does not need.
+   **It must install fdroidserver the way CI does.** fdroiddata's
+   `.gitlab-ci.yml` has an `.install_fdroid_server` anchor that fetches
+   fdroidserver *master* as a tarball into `$fdroidserver` (an env var from
+   the image's `/etc/profile.d/bsenv.sh`) and puts it on `PATH` and
+   `PYTHONPATH`; this workflow does the same. Installing the Debian
+   `fdroidserver` package instead looks equivalent and is not — its older
+   scanner rejects the `build/` output that `gradle clean` creates inside
+   `node_modules` through React Native's and Expo's `includeBuild` plugins,
+   producing 288 errors for a recipe fdroiddata's own CI builds clean. That
+   cost a `scandelete` this recipe does not need. The sibling BracketUp recipe
+   never saw it only because its `scanignore` covers all of `node_modules`,
+   where this one lists paths individually.
+
    Treat a failure here as a question, not a verdict, until you have checked
-   the MR pipeline.
+   the MR pipeline — and note the image does **not** ship a checkout at
+   `/home/vagrant/fdroidserver`; CI creates it, so the tarball step is not
+   optional.
 
    It exists because a full local `fdroid build` needs JDK 17, the Android
    SDK and NDK r27b on this machine, none of which are installed here, and

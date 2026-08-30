@@ -44,17 +44,22 @@ jobs:
           source /etc/profile.d/bsenv.sh
           export PYTHONUNBUFFERED=true
 
-          # Use the fdroidserver git checkout the image already carries, NOT
-          # the distro package. fdroiddata's CI runs
-          #   PATH=/home/vagrant/fdroidserver PYTHONPATH=/home/vagrant/fdroidserver
-          # and the two disagree: the older packaged scanner rejects the
-          # build/ output that `gradle clean` creates inside node_modules,
-          # which CI's newer one ignores. Using the .deb here produced 288
-          # phantom scanner errors for a recipe that builds fine on CI.
-          export PATH="/home/vagrant/fdroidserver:$PATH"
-          export PYTHONPATH="/home/vagrant/fdroidserver:/home/vagrant/fdroidserver/examples"
-          git config --global --add safe.directory /home/vagrant/fdroidserver
-          fdroid --version
+          # Install fdroidserver exactly as fdroiddata's CI does -- its
+          # .install_fdroid_server anchor, fetching master as a tarball into
+          # $fdroidserver (set by bsenv.sh). NOT the Debian package: the two
+          # disagree, and the older packaged scanner rejects the build/ output
+          # that `gradle clean` creates inside node_modules through React
+          # Native's and Expo's includeBuild plugins. That produced 288
+          # phantom errors here for a recipe fdroiddata's own CI builds clean.
+          apt-get update -qq
+          apt-get install -qy --no-install-recommends curl ca-certificates
+          rm -rf "$fdroidserver"; mkdir -p "$fdroidserver"
+          curl --silent https://gitlab.com/fdroid/fdroidserver/-/archive/master/fdroidserver-master.tar.gz \
+            | tar -xz --directory="$fdroidserver" --strip-components=1
+          export PATH="$fdroidserver:$PATH"
+          export PYTHONPATH="$fdroidserver:$fdroidserver/examples"
+          export serverwebroot=/tmp
+          fdroid --version || echo "(git snapshot reports no version -- expected)"
 
           # fdroiddata CI refreshes gradlew-fdroid before every build. The copy
           # bundled in the .deb lags the gradle-transparency-log, so point
@@ -78,7 +83,7 @@ jobs:
 
           asvagrant() {
             sudo --preserve-env --user vagrant \
-              env PATH="$PATH" PYTHONPATH="$PYTHONPATH" \
+              env PATH="$PATH" PYTHONPATH="$PYTHONPATH" serverwebroot=/tmp \
               PYTHONUNBUFFERED=true TERM=dumb HOME="$home_vagrant" "$@"
           }
 
