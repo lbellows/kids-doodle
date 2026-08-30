@@ -493,19 +493,36 @@ app.
    fdroid rewritemeta com.kidsdoodle.app
    diff -u ~/src/kids-doodle/fdroid/com.kidsdoodle.app.yml metadata/com.kidsdoodle.app.yml
 
-   fdroid lint -f com.kidsdoodle.app   # metadata fields; silence means clean
+   fdroid lint -f com.kidsdoodle.app   # see the ruamel note below re trailing spaces
    fdroid scanner com.kidsdoodle.app   # binaries and maven repos in the source
    ```
 
-   **The `rewritemeta` check is the one that fails merge requests.** fdroiddata
-   CI runs `fdroid rewritemeta` on every changed metadata file and fails the MR
-   if the file changes. The rewrite reorders keys and strips YAML comments, so
-   the committed recipe is kept as literal `rewritemeta` output and every piece
-   of rationale a reviewer needs lives in `MaintainerNotes`, which survives it.
-   This is easy to break by hand: a long `sudo:` command wrapped across two
-   lines is valid YAML but not canonical, and rewritemeta unwraps it. If the
-   `diff` prints anything, copy `metadata/com.kidsdoodle.app.yml` back over the
-   recipe rather than hand-editing it.
+   **Local `rewritemeta` is a hint, not a gate — do not "fix" the recipe to
+   match it.** fdroiddata CI runs `fdroid rewritemeta` and fails the MR if the
+   file changes, so the shape matters; but the line-folding half of that
+   rewrite comes from `ruamel.yaml`, whose version fdroidserver does not pin
+   (`YAML(typ='rt')`, no explicit width). Versions disagree, and nothing
+   surfaces the mismatch:
+
+   | ruamel | long `sudo:` line |
+   |---|---|
+   | 0.17.21 (fdroidserver 2.4.5 from PyPI) | unwraps it, and calls that stable |
+   | 0.19.1 (what CI matches) | folds it across two lines, trailing space and all |
+
+   The `curl -Lo jdk17.tar.gz` entries are therefore stored **wrapped**, which
+   is the form fdroiddata's pipeline accepted on the sibling BracketUp MR. A
+   local `rewritemeta` on ruamel 0.17.x will report those three lines as
+   changed, and `fdroid lint` on the same install will flag them as
+   `trailing spaces` and tell you to "run rewritemeta to fix formatting".
+   **Both are expected — leave the lines alone.** The fold ruamel 0.19.1
+   emits ends the first line with a trailing space, and that is exactly what
+   the accepted MR contains. Unwrapping them to satisfy the local tool is a
+   regression that CI rejects.
+
+   What the rewrite does deterministically, regardless of version, is reorder
+   keys and strip YAML comments — so rationale still belongs in
+   `MaintainerNotes`, never in comments. Use the local run to catch that, and
+   let the MR pipeline decide on formatting.
 
    Two traps in the local setup, both of which look like real findings and are
    not. Run outside a fdroiddata checkout, `fdroid lint` reports every category
