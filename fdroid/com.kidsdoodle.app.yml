@@ -39,6 +39,10 @@ Builds:
       - yes
     rm:
       - .github
+    prebuild:
+      - grep -q 'includeInApk = false' build.gradle && exit 0
+      - sed -i '/compileSdk rootProject.ext.compileSdkVersion/a\    dependenciesInfo
+        { includeInApk = false; includeInBundle = false }' build.gradle
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -78,6 +82,10 @@ Builds:
       - yes
     rm:
       - .github
+    prebuild:
+      - grep -q 'includeInApk = false' build.gradle && exit 0
+      - sed -i '/compileSdk rootProject.ext.compileSdkVersion/a\    dependenciesInfo
+        { includeInApk = false; includeInBundle = false }' build.gradle
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -117,6 +125,10 @@ Builds:
       - yes
     rm:
       - .github
+    prebuild:
+      - grep -q 'includeInApk = false' build.gradle && exit 0
+      - sed -i '/compileSdk rootProject.ext.compileSdkVersion/a\    dependenciesInfo
+        { includeInApk = false; includeInBundle = false }' build.gradle
     scanignore:
       - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
       - node_modules/react-native/ReactAndroid/publish.gradle
@@ -155,6 +167,11 @@ MaintainerNotes: |-
   ABI sudo blocks share a VM, so the install is idempotent (`rm -rf /opt/node`
   then `ln -sf`). Temurin 17 is pinned the same way: the image's default JDK
   is 21 and React Native requires 17.
+
+  AGP 8 writes a "Dependency metadata" APK signing block that `fdroid scanner`
+  rejects. `prebuild` sets `dependenciesInfo.includeInApk = false` (and
+  includeInBundle) so the APKs this recipe produces are clean. The same change
+  lives in plugins/withoutDependencyMetadata.js for later tags.
 
   No prebuilt binaries are downloaded at install time. The tree has no
   install scripts, so `npm ci` only unpacks registry tarballs.

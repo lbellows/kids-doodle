@@ -42,7 +42,8 @@
       "./plugins/withGradleMemory",
       "./plugins/withAbiSplits",
       "./plugins/withMinifiedRelease",
-      "./plugins/withCompressedNativeLibs"
+      "./plugins/withCompressedNativeLibs",
+      "./plugins/withoutDependencyMetadata"
     ],
     "experiments": {
       "typedRoutes": true

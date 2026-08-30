@@ -482,3 +482,7 @@ if the build recipe itself has to change.
 - The pinned Node.js tarball and its SHA-256. If you bump the Node version in
   the recipe, update the checksum from
   `https://nodejs.org/dist/<version>/SHASUMS256.txt`.
+- Extra APK signing blocks. AGP 8 adds a "Dependency metadata" block that
+  `fdroid scanner` rejects. The recipe's `prebuild` disables it
+  (`dependenciesInfo.includeInApk = false`); `plugins/withoutDependencyMetadata.js`
+  does the same in the committed `android/` project.
