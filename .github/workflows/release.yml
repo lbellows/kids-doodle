@@ -40,6 +40,10 @@ jobs:
           java-version: 17
 
       - uses: android-actions/setup-android@v4
+        with:
+          # The action's default set still includes the obsolete "tools", which
+          # Google has removed from the SDK repository, so the default now fails.
+          packages: platform-tools
 
       - uses: gradle/actions/setup-gradle@v6
 
