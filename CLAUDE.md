@@ -28,6 +28,7 @@ plugins/
   withMinifiedRelease.js         R8 on release builds, plus keep rules
   withCompressedNativeLibs.js    compress .so in the APK (download size)
 android/            committed, NOT gitignored — regenerate + commit after app.json changes
+assets/icon.svg     icon source; `npm run icons` renders every icon PNG, then `npm run prebuild`
 fastlane/metadata/  store listing, read by `fdroid update` for the self-hosted repo
 fdroid/             app-level metadata for the self-hosted repo index (not a build recipe)
 ```

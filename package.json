@@ -11,7 +11,8 @@
     "prebuild": "expo prebuild --platform android --no-install --clean",
     "prebuild:check": "./scripts/check-release-metadata.sh",
     "purge:blobs": "./scripts/purge-nonfree-blobs.sh",
-    "changelogs": "./scripts/sync-changelogs.sh"
+    "changelogs": "./scripts/sync-changelogs.sh",
+    "icons": "./scripts/render-icons.sh"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
