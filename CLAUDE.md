@@ -1,6 +1,6 @@
 # KidsDoodle — project context
 
-Expo SDK 55 / React Native 0.83 / TypeScript strict. Drawing app for kids with parent PIN lock. Primary target: Android. Web is supported as a preview.
+Expo SDK 57 / React Native 0.86 / TypeScript strict. Drawing app for kids with parent PIN lock. Primary target: Android. Web is supported as a preview.
 
 ## File structure
 
@@ -55,7 +55,7 @@ Windows Hermes compiler — and CI builds the APK with them gone. Don't add a
 dependency whose Android build needs a binary that survives that purge.
 
 `package.json` sets `expo.autolinking.android.buildFromSource: [".*"]`, which opts
-out of Expo SDK 55's precompiled `.aar` modules. Don't remove it.
+out of Expo's precompiled `.aar` modules (SDK 55+). Don't remove it.
 
 Metro still resolves `DrawingCanvas.web.tsx` on web and `DrawingCanvas.tsx` on
 native; `metro.config.js` adds `'web'` to `resolver.platforms` — without it, Metro

@@ -8,7 +8,7 @@ A drawing app for kids with a parent-lock feature. Kids can draw freely; parents
 
 | | |
 |---|---|
-| Runtime | Expo SDK 55 / React Native 0.83 |
+| Runtime | Expo SDK 57 / React Native 0.86 |
 | Language | TypeScript (strict) |
 | Navigation | expo-router (file-based) |
 | Drawing — Android | react-native-svg 15 (MIT, builds from source — see [docs/PACKAGING.md](docs/PACKAGING.md)) |

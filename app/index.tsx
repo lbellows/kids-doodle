@@ -8,7 +8,7 @@ import {
   BackHandler,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as NavigationBar from 'expo-navigation-bar';
+import { NavigationBar } from 'expo-navigation-bar';
 import { useKeepAwake } from 'expo-keep-awake';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -40,16 +40,6 @@ export default function DrawScreen() {
     }
   }, [hasPin, router]);
 
-  // Hide nav bar and prevent back while locked
-  useEffect(() => {
-    if (locked) {
-      NavigationBar.setVisibilityAsync('hidden');
-      NavigationBar.setBehaviorAsync('inset-swipe');
-    } else {
-      NavigationBar.setVisibilityAsync('visible');
-    }
-  }, [locked]);
-
   // Block hardware back button when locked
   useEffect(() => {
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
@@ -64,6 +54,8 @@ export default function DrawScreen() {
   return (
     <View style={styles.container}>
       <StatusBar hidden={locked} />
+      {/* Hidden while locked; a swipe only reveals it briefly. */}
+      <NavigationBar hidden={locked} />
 
       {/* Drawing canvas fills the screen */}
       <DrawingCanvas
@@ -160,7 +152,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(0,0,0,0.5)',
     alignItems: 'center',
     justifyContent: 'center',

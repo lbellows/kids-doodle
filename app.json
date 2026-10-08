@@ -6,12 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "scheme": "kidsdoodle",
     "android": {
       "adaptiveIcon": {
@@ -36,6 +30,14 @@
     "plugins": [
       "expo-router",
       "expo-navigation-bar",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain"
+        }
+      ],
       "./plugins/withReleaseSigning",
       "./plugins/withOfflineReleaseManifest",
       "./plugins/withoutUpdatesMetadata",

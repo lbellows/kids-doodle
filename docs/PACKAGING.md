@@ -46,7 +46,7 @@ with `react-native-svg` (MIT, pure Java, no binaries). The canvas only ever drew
 Two related settings exist for the same reason:
 
 - `expo.autolinking.android.buildFromSource: [".*"]` in `package.json` opts out
-  of Expo SDK 55's precompiled `.aar` modules so every Expo module is compiled
+  of Expo's precompiled (SDK 55+) `.aar` modules so every Expo module is compiled
   from source.
 - The dependency tree now has **zero** `preinstall`/`install`/`postinstall`
   scripts, so `npm ci` only unpacks registry tarballs. Keep it that way — check
