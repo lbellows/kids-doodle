@@ -2,7 +2,7 @@
   "expo": {
     "name": "KidsDoodle",
     "slug": "kids-doodle",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -16,7 +16,7 @@
       },
       "package": "com.kidsdoodle.app",
       "predictiveBackGestureEnabled": false,
-      "versionCode": 4,
+      "versionCode": 5,
       "blockedPermissions": [
         "android.permission.VIBRATE",
         "android.permission.SYSTEM_ALERT_WINDOW",

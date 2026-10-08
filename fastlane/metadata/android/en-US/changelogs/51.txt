@@ -1,0 +1,7 @@
+Updated to Expo SDK 57 and React Native 0.86.
+
+The launch screen now uses Android's built-in splash screen. While the drawing
+screen is locked, swiping from the edge shows the navigation bar only briefly
+before it hides again.
+
+KidsDoodle is now licensed under the AGPL-3.0-or-later (previously MIT).

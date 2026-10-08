@@ -22,7 +22,8 @@ update` reads that directory when building the self-hosted index.
 |---|---|
 | `v1.0.0` | tagged and released — 93.8 MB universal APK |
 | `v1.0.2` | split per ABI, minified, libraries compressed, no permissions — 17–18 MB |
-| `v1.0.3` | tagged and released — current |
+| `v1.0.3` | tagged and released |
+| `v1.0.4` | Expo SDK 57 / React Native 0.86 — current |
 | Self-hosted repo | `lbellows/fdroid` created, KidsDoodle listed and correct; **first publish blocked** on its index-signing secret |
 
 1.0.1 was never published — it existed only as a version string while the
