@@ -104,7 +104,7 @@ scripts/check-release-metadata.sh     guards android/ sync + changelog presence
 scripts/purge-nonfree-blobs.sh        deletes unused prebuilt binaries before Gradle
 fastlane/metadata/android/en-US/      store listing, read by fdroid update
 fdroid/com.kidsdoodle.app.yml         licence/categories/links for the repo index
-.github/workflows/ci.yml              typecheck + full release build, no secrets
+.github/workflows/ci.yml              typecheck; full release build on PRs, no secrets
 .github/workflows/release.yml         builds + signs the per-ABI APKs on a v* tag
 ```
 
@@ -316,9 +316,10 @@ base64 -w0 kidsdoodle-release.keystore   # -> ANDROID_KEYSTORE_BASE64
 | `ANDROID_KEY_ALIAS` | `kidsdoodle` |
 | `ANDROID_KEY_PASSWORD` | key password |
 
-These are only needed for tagged releases. `ci.yml` builds the same release APK
-without them and asserts the permission set, so the build itself is verified on
-every push.
+These are only needed for `release.yml`. `ci.yml` builds the same release APK
+without them on pull requests and asserts the permission set. Pushes to master
+only run the typecheck; to build a commit that did not go through a PR, trigger
+**Release APKs** by hand.
 
 ## Cutting a release
 

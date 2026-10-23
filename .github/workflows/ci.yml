@@ -23,6 +23,10 @@ jobs:
 
   android:
     name: Release APKs build
+    # Pull requests only. release.yml runs the same Gradle build, signed and
+    # smoke-tested, on every v* tag and on workflow_dispatch, so building here
+    # on pushes to master or by hand rebuilt the same commit a second time.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     # A healthy build is ~25 min. Without a bound, a Gradle OOM thrashes until
     # GitHub's six-hour job limit kills it — which is exactly what happened once.
